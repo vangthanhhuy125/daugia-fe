@@ -1,4 +1,10 @@
 import Image from "next/image";
+import { Jost } from 'next/font/google';
+
+const jost = Jost({ 
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '900'],
+});
 
 interface AuctionCardProps {
   label: string;
@@ -17,11 +23,11 @@ export const AuctionCard = ({
   priceLabel,
   price,
 }: AuctionCardProps) => (
-  <div className="group w-full bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col items-center text-center">
+  <div className={`${jost.className} group w-full bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col items-center text-center`}>
 
     <p className="text-gray-400 text-xs">{label}</p>
 
-    <p className="text-[#1a1a1a] font-semibold text-sm md:text-base mb-3">
+    <p className="text-[#1a1a1a] font-bold text-sm md:text-base mb-3">
       {time}
     </p>
 
@@ -34,15 +40,15 @@ export const AuctionCard = ({
       />
     </div>
 
-    <h3 className="text-gray-700 font-medium text-sm md:text-base mb-1 line-clamp-2">
+    <h3 className="text-gray-700 font-semibold text-sm md:text-base mb-1 line-clamp-2">
       {title}
     </h3>
 
     <p className="text-gray-600 text-xs md:text-sm mb-4">
-      {priceLabel}: <span className="font-semibold">{price}</span>
+      {priceLabel}: <span className="font-bold">{price}</span>
     </p>
 
-    <button className="w-full py-2 bg-[#d32f2f] text-white text-sm md:text-base font-semibold rounded-md hover:bg-red-700 transition-colors">
+    <button className="w-full py-2 bg-[#d32f2f] text-white text-sm md:text-base font-bold rounded-md hover:bg-red-700 transition-colors">
       Details
     </button>
 

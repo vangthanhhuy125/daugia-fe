@@ -1,9 +1,15 @@
 "use client";
 import { motion } from "framer-motion";
+import { Jost } from 'next/font/google';
+
+const jost = Jost({ 
+  subsets: ['latin'],
+  weight: ['400', '700', '900'],
+});
 
 export const Hero = () => {
   return (
-    <section className="relative w-full bg-[#fdfdfd] py-16 px-6 md:px-20 flex flex-col md:flex-row items-center gap-10 overflow-hidden min-h-[600px]">
+    <section className={`${jost.className} relative w-full bg-[#fdfdfd] py-16 px-6 md:px-20 flex flex-col md:flex-row items-center gap-10 overflow-hidden min-h-[600px]`}>
 
       <motion.div
         animate={{
@@ -43,17 +49,18 @@ export const Hero = () => {
       >
         <div className="space-y-2">
           <p className="text-gray-500 font-medium tracking-wide">
-            Welcome <span className="font-bold">Smart</span>Auction
+            Welcome <span className="font-[900] text-black">Smart</span>
+            <span className="font-light text-black">Auction</span>
           </p>
 
-          <h1 className="text-5xl md:text-6xl font-extrabold text-[#d32f2f] leading-tight">
+          <h1 className="text-5xl md:text-6xl font-[900] text-[#d32f2f] leading-tight uppercase tracking-tight">
             Smart Bidding, <br />
             <span className="text-gray-900">Better Deals</span>
           </h1>
         </div>
 
-        <p className="text-gray-600 text-lg leading-relaxed max-w-md">
-          SmartAuction is an online auction platform that allows users to discover products, 
+        <p className="text-gray-600 text-lg leading-relaxed max-w-md font-medium">
+          <span className="font-[900] text-black">Smart</span>Auction is an online auction platform that allows users to discover products, 
           place bids in real time, and experience a fair and transparent bidding process. 
           Our system is designed to provide a simple, secure, and efficient auction experience for everyone
         </p>
@@ -65,7 +72,7 @@ export const Hero = () => {
                 .getElementById("upcoming-auctions")
                 ?.scrollIntoView({ behavior: "smooth" })
             }
-            className="px-10 py-4 bg-[#d32f2f] text-white font-bold rounded-lg shadow-lg hover:bg-red-700 hover:shadow-red-200 transition-all transform hover:-translate-y-1">
+            className="px-10 py-4 bg-[#d32f2f] text-white font-black rounded-lg shadow-lg hover:bg-red-700 hover:shadow-red-200 transition-all transform hover:-translate-y-1">
             Discover
           </button>
         </div>
