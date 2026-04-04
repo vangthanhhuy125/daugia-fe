@@ -1,5 +1,6 @@
 import { AuctionCard } from "./AuctionCard";
 import { Jost } from 'next/font/google';
+import Link from "next/link";
 
 const jost = Jost({ 
   subsets: ['latin'],
@@ -44,9 +45,12 @@ export const AuctionSection = ({ id, title, items }: SectionProps) => (
       </div>
 
       <div className="flex justify-center md:justify-start mt-10">
-        <button className="px-6 py-2 border-2 border-[#ce2029] text-[#ce2029] text-sm md:text-base font-bold rounded-md hover:bg-red-50 transition tracking-wider">
+        <Link
+          href="/list-auction"
+          className="px-6 py-2 border-2 border-[#ce2029] text-[#ce2029] text-sm md:text-base font-bold rounded-md hover:bg-red-50 transition tracking-wider"
+        >
           View All
-        </button>
+        </Link>
       </div>
 
     </div>

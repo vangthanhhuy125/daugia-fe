@@ -99,7 +99,7 @@ const Header = () => {
           </Link>
 
           <Link
-            href="/signup"
+            href="/register"
             className="px-6 py-2 border-2 border-[#d32f2f] rounded-md bg-white hover:bg-[#d32f2f] hover:text-white transition group"
           >
             <span className="text-[15px] font-[900] text-[#d32f2f] group-hover:text-white">
