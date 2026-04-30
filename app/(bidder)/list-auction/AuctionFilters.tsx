@@ -2,26 +2,48 @@
 
 import { Search, RotateCcw, Calendar, ChevronDown } from "lucide-react";
 import { Jost } from 'next/font/google';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 const jost = Jost({ subsets: ['latin'], weight: ['400', '500', '600', '700', '900'] });
 
-export const AuctionFilters = () => {
+interface AuctionFiltersProps {
+  onFilterChange: (filters: {
+    searchTerm: string;
+    category: string;
+    startDate: Date | null;
+    endDate: Date | null;
+    status: string[];
+  }) => void;
+}
+
+export const AuctionFilters = ({ onFilterChange }: AuctionFiltersProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [category, setCategory] = useState("All category");
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
 
+  useEffect(() => {
+    onFilterChange({
+      searchTerm,
+      category,
+      startDate,
+      endDate,
+      status: selectedStatus,
+    });
+  }, [searchTerm, category, startDate, endDate, selectedStatus, onFilterChange]);
+
   const handleStatusChange = (status: string) => {
-    setSelectedStatus(prev => 
+    setSelectedStatus(prev =>
       prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
     );
   };
 
   const handleReset = () => {
     setSearchTerm("");
+    setCategory("All category");
     setSelectedStatus([]);
     setStartDate(null);
     setEndDate(null);
@@ -29,9 +51,9 @@ export const AuctionFilters = () => {
 
   return (
     <div className={`${jost.className} w-full mb-12 select-none`}>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-4">
         <h3 className="text-[#CE2029] font-bold text-xl">Search</h3>
-        <button 
+        <button
           onClick={handleReset}
           className="p-1 hover:rotate-180 transition-transform duration-500 text-gray-400 hover:text-[#CE2029]"
         >
@@ -42,12 +64,12 @@ export const AuctionFilters = () => {
       <div className="flex flex-wrap items-end gap-4 mb-8">
         <div className="flex-grow min-w-[280px]">
           <div className="relative group">
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by keyword..." 
-              className="w-full h-12 bg-white border border-gray-200 rounded-xl px-12 outline-none font-medium text-gray-700 focus:border-[#CE2029] transition-all" 
+              placeholder="Search by keyword..."
+              className="w-full h-12 bg-white border border-gray-200 rounded-xl px-12 outline-none font-medium text-gray-700 focus:border-[#CE2029] transition-all"
             />
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#CE2029]" size={18} />
           </div>
@@ -55,10 +77,14 @@ export const AuctionFilters = () => {
 
         <div className="w-full md:w-64">
           <div className="relative group">
-            <select className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-700 appearance-none cursor-pointer focus:border-[#CE2029] transition-all">
-              <option>All category</option>
-              <option>Electronics</option>
-              <option>Property</option>
+            <select 
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-700 appearance-none cursor-pointer focus:border-[#CE2029] transition-all"
+            >
+              <option value="All category">All category</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Property">Property</option>
             </select>
             <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
           </div>

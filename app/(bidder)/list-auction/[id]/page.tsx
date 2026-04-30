@@ -1,22 +1,27 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
-import { Star } from "lucide-react";
+import { Star, ShoppingCart } from "lucide-react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { UpcomingView } from "./UpcomingView";
+import { LiveView } from "./LiveView";
+import { EndedView } from "./EndedView";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "600", "700", "900"] });
 
 export default function AuctionDetailPage() {
+  const [status, setStatus] = useState<'Upcoming' | 'Live' | 'Ended'>('Live');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const infoRows = [
     { label: "Starting price:", value: "19,000,000 VND" },
     { label: "Property code:", value: "7f3c2c5e-4f92-4d6b-8f6a-5c2b9a1f4a11" },
     { label: "Bid increment:", value: "200,000 VND" },
     { label: "Buy now price:", value: "27,000,000 VND" },
-    { label: "Status:", value: "Upcoming", statusColor: "text-yellow-500" },
+    { label: "Status:", value: status, statusColor: status === 'Upcoming' ? 'text-yellow-500' : status === 'Live' ? 'text-blue-600' : 'text-[#CE2029]' },
     { label: "Category:", value: "Electronics" },
     { label: "Bidding start time:", value: "10/3/2026 09:00:00" },
     { label: "Bidding end time:", value: "15/3/2026 09:00:00" },
@@ -35,7 +40,6 @@ export default function AuctionDetailPage() {
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Cột trái: Gallery & Seller (Giữ nguyên) */}
           <div className="lg:col-span-5 space-y-8">
             <div className="relative aspect-video rounded-[32px] overflow-hidden border border-gray-100 shadow-sm bg-gray-50">
               <Image src="/msi-main.jpg" alt="Product" fill className="object-contain p-4" />
@@ -69,20 +73,29 @@ export default function AuctionDetailPage() {
                 </div>
               </div>
             </div>
+
+            {status === 'Live' && (
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="w-full h-14 bg-[#FF6600] text-white font-bold text-lg rounded-lg flex items-center justify-center gap-2 shadow-lg hover:bg-orange-600 transition-all"
+              >
+                <ShoppingCart size={20} />
+                Buy Now
+              </button>
+            )}
           </div>
 
-          {/* Cột phải: Thông tin thay đổi */}
           <div className="lg:col-span-7 space-y-8">
             <h2 className="text-4xl font-[900] text-gray-900 tracking-tight leading-tight">
               MSI Raider GE78 Gaming Laptop
             </h2>
             
-            {/* Đổ View Upcoming vào đây */}
-            <UpcomingView infoRows={infoRows} />
+            {status === 'Upcoming' && <UpcomingView infoRows={infoRows} />}
+            {status === 'Live' && <LiveView infoRows={infoRows} />}
+            {status === 'Ended' && <EndedView infoRows={infoRows} />}
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );

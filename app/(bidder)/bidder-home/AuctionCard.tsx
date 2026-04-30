@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Jost } from 'next/font/google';
+import Link from "next/link";
 
 const jost = Jost({ 
   subsets: ['latin'],
@@ -7,15 +8,17 @@ const jost = Jost({
 });
 
 interface AuctionCardProps {
+  id: string;
   label: string;
   time: string;
   image: string;
   title: string;
   priceLabel: string;
-  price: string;
+  price: string | number;
 }
 
 export const AuctionCard = ({
+  id,
   label,
   time,
   image,
@@ -45,12 +48,14 @@ export const AuctionCard = ({
     </h3>
 
     <p className="text-gray-600 text-xs md:text-sm mb-4">
-      {priceLabel}: <span className="font-bold">{price}</span>
+      {priceLabel}: <span className="font-bold">{typeof price === 'number' ? price.toLocaleString() : price}</span>
     </p>
 
-    <button className="w-full py-2 bg-[#d32f2f] text-white text-sm md:text-base font-bold rounded-md hover:bg-red-700 transition-colors">
-      Details
-    </button>
+    <Link href={`/list-auction/${id}`} className="w-full">
+      <button className="w-full py-2 bg-[#d32f2f] text-white text-sm md:text-base font-bold rounded-md hover:bg-red-700 transition-colors">
+        Details
+      </button>
+    </Link>
 
   </div>
 );

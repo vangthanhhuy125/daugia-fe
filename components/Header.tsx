@@ -20,7 +20,7 @@ const Header = () => {
       
       <div className="max-w-screen-xl mx-auto px-6 h-[70px] flex items-center justify-between">
 
-        <Link href="/home" className="flex items-center gap-2">
+        <Link href="/bidder-home" className="flex items-center gap-2">
           <div className="relative w-10 h-10 flex-shrink-0">
             <Image
               src="/logo-website.png"
