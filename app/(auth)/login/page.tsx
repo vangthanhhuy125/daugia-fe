@@ -1,9 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Jost } from "next/font/google";
+import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -11,6 +13,31 @@ const jost = Jost({
 });
 
 export default function LoginPage() {
+  const { login } = useAuth();
+  const router = useRouter();
+  
+  // State để lấy giá trị input
+  const [identity, setIdentity] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // LOGIC GIẢ LẬP NHẬN DIỆN ROLE
+    // Sau này má thay đoạn này bằng việc gọi API, API trả về role nào thì login role đó
+    if (identity.includes("admin")) {
+      login({ role: "admin", token: "admin-token" });
+      router.push("/admin/dashboard"); // Trang dành cho Admin
+    } else if (identity.includes("seller")) {
+      login({ role: "seller", token: "seller-token" });
+      router.push("/seller/dashboard"); // Trang dành cho Seller
+    } else {
+      // Mặc định là Bidder
+      login({ role: "bidder", token: "bidder-token" });
+      router.push("/bidder-home"); // Trang dành cho Bidder
+    }
+  };
+
   return (
     <div className={`${jost.className} flex min-h-screen bg-white`}>
       
@@ -47,14 +74,18 @@ export default function LoginPage() {
         <div className="max-w-md w-full mx-auto lg:mx-0">
           <h1 className="text-5xl font-[900] text-black mb-8">Login</h1>
 
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 ml-1">
                 Email address or phone number:
               </label>
               <input
                 type="text"
+                value={identity}
+                onChange={(e) => setIdentity(e.target.value)}
+                placeholder="Nhập 'admin' hoặc 'seller' để test role"
                 className="w-full h-14 bg-[#e0e0e0] rounded-full px-6 outline-none focus:ring-2 ring-blue-600 transition"
+                required
               />
             </div>
 
@@ -64,7 +95,10 @@ export default function LoginPage() {
               </label>
               <input
                 type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full h-14 bg-[#e0e0e0] rounded-full px-6 outline-none focus:ring-2 ring-blue-600 transition"
+                required
               />
             </div>
 

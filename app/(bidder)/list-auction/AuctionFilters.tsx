@@ -4,6 +4,7 @@ import { Search, RotateCcw, Calendar, ChevronDown } from "lucide-react";
 import { Jost } from 'next/font/google';
 import { useState, useEffect } from 'react';
 import DatePicker from "react-datepicker";
+// @ts-ignore
 import "react-datepicker/dist/react-datepicker.css";
 
 const jost = Jost({ subsets: ['latin'], weight: ['400', '500', '600', '700', '900'] });
@@ -16,14 +17,20 @@ interface AuctionFiltersProps {
     endDate: Date | null;
     status: string[];
   }) => void;
+  initialStatus: string[]; // Thêm prop này để nhận trạng thái từ URL
 }
 
-export const AuctionFilters = ({ onFilterChange }: AuctionFiltersProps) => {
+export const AuctionFilters = ({ onFilterChange, initialStatus }: AuctionFiltersProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("All category");
-  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>(initialStatus);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+
+  // Đồng bộ selectedStatus khi initialStatus từ trang Page thay đổi (do URL thay đổi)
+  useEffect(() => {
+    setSelectedStatus(initialStatus);
+  }, [initialStatus]);
 
   useEffect(() => {
     onFilterChange({

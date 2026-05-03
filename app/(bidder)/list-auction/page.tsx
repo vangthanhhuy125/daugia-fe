@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuctionFilters } from "./AuctionFilters";
@@ -22,14 +23,25 @@ const auctionsData = Array(30).fill({
 });
 
 export default function AuctionListPage() {
+  const searchParams = useSearchParams();
+  const statusFromUrl = searchParams.get("status");
+
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     searchTerm: "",
     category: "All category",
     startDate: null as Date | null,
     endDate: null as Date | null,
-    status: [] as string[],
+    status: statusFromUrl ? [statusFromUrl] : [] as string[],
   });
+
+  useEffect(() => {
+    const status = searchParams.get("status");
+    if (status) {
+      setFilters(prev => ({ ...prev, status: [status] }));
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
 
   const ITEMS_PER_PAGE = 9;
 
@@ -73,7 +85,10 @@ export default function AuctionListPage() {
            <p className="text-sm font-medium text-gray-400">Home {'>'} <span className="text-gray-400">List Auctions</span></p>
         </div>
 
-        <AuctionFilters onFilterChange={handleFilterChange} />
+        <AuctionFilters 
+          onFilterChange={handleFilterChange} 
+          initialStatus={filters.status} 
+        />
 
         {currentAuctions.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
