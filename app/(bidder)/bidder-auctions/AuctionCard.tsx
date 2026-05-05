@@ -1,31 +1,112 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import HistoryAuctionModal from "./HistoryAuctionModal"; // Import modal bạn vừa làm ở trên
 
 interface AuctionCardProps {
-  image: string;
+  id: string; // Thêm ID để điều hướng
   title: string;
+  image: string;
   time: string;
-  startingBid: string;
+  price: string;
+  priceLabel: string;
+  status: "watching" | "participating" | "history";
+  result?: "won" | "lost";
+  isLeading?: boolean;
 }
 
-export const AuctionCard = ({ image, title, time, startingBid }: AuctionCardProps) => {
+const AuctionCard = ({ 
+  id,
+  title, 
+  image, 
+  time, 
+  price, 
+  priceLabel, 
+  status, 
+  result,
+  isLeading 
+}: AuctionCardProps) => {
+  const router = useRouter();
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const shouldHighlight = status === 'participating' && isLeading;
+
+  const handleDetailsClick = () => {
+    if (status === "watching") {
+      // Chuyển hướng sang trang chi tiết dạng Upcoming
+      router.push(`/list-auction/${id}`); 
+    } else if (status === "participating") {
+      // Chuyển hướng sang trang chi tiết dạng Live
+      router.push(`/list-auction/${id}`);
+    } else if (status === "history") {
+      // Mở Pop-up lịch sử
+      setIsHistoryModalOpen(true);
+    }
+  };
+
   return (
-    <div className="bg-white border border-gray-100 rounded-[30px] p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center text-center">
-      <p className="text-gray-400 text-sm font-bold mb-1">Auction Time</p>
-      <p className="text-gray-900 text-base font-black mb-4">{time}</p>
-      
-      <div className="relative w-full h-40 mb-4">
-        <Image src={image} alt={title} fill className="object-contain" />
+    <>
+      <div className={`relative group border rounded-2xl p-4 transition-all hover:shadow-md bg-white ${
+        shouldHighlight ? 'border-yellow-400 border-2 shadow-[0_0_15px_rgba(250,204,21,0.3)]' : 'border-gray-100'
+      }`}>
+        
+        <div className="text-center mb-3">
+          <p className="text-[10px] font-[900] text-gray-400 tracking-widest uppercase">
+            {status === 'history' ? 'Auction End Time' : 'Auction Time'}
+          </p>
+          <p className="text-sm font-[900] text-gray-800">{time}</p>
+        </div>
+
+        <div className="relative aspect-video w-full mb-4 rounded-xl overflow-hidden bg-gray-50">
+          <Image src={image} alt={title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+        </div>
+
+        <div className="text-center space-y-1 mb-4">
+          <h4 className="font-bold text-gray-900 text-base">{title}</h4>
+          <p className="text-xs font-medium text-gray-500">
+            <span className="font-[900] text-gray-700">{priceLabel}:</span> {price}
+          </p>
+        </div>
+
+        {status === 'participating' && isLeading && (
+          <div className="text-center font-[900] text-[10px] mb-2 text-yellow-600 tracking-tighter italic">
+              You are Leading!
+          </div>
+        )}
+
+        {status === 'history' && result && (
+          <div className={`text-center font-[900] text-sm mb-3 tracking-tighter uppercase italic ${
+            result === 'won' ? 'text-green-600' : 'text-red-600'
+          }`}>
+              {result === 'won' ? 'You Win' : 'You Loss'}
+          </div>
+        )}
+
+        <button 
+          onClick={handleDetailsClick}
+          className="w-full py-2.5 bg-[#d32f2f] text-white text-xs font-[900] rounded-lg hover:bg-red-700 transition active:scale-95 tracking-wider"
+        >
+          Details
+        </button>
+
+        {shouldHighlight && (
+          <div className="absolute top-3 right-3 flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-400"></span>
+          </div>
+        )}
       </div>
-      
-      <h3 className="text-lg font-bold text-gray-900 mb-1">{title}</h3>
-      <p className="text-gray-900 mb-4">Starting Bid: {startingBid} VND</p>
-      
-      <button className="w-full py-2 bg-[#CE2029] text-white font-black rounded-lg hover:bg-red-700 transition-colors text-sm">
-        Details
-      </button>
-    </div>
+
+      {/* Render Modal History nếu status là history */}
+      {status === "history" && (
+        <HistoryAuctionModal 
+          isOpen={isHistoryModalOpen} 
+          onClose={() => setIsHistoryModalOpen(false)} 
+        />
+      )}
+    </>
   );
 };
+
+export default AuctionCard;
