@@ -37,9 +37,16 @@ const HistoryAuctionModal = ({ isOpen, onClose }: HistoryAuctionModalProps) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-[32px] p-8 shadow-2xl animate-in fade-in zoom-in duration-300">
-        
-        {/* Header */}
+      <div 
+        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-[32px] p-8 shadow-2xl animate-in fade-in zoom-in duration-300
+          [&::-webkit-scrollbar]:w-2
+          [&::-webkit-scrollbar-track]:bg-transparent
+          [&::-webkit-scrollbar-thumb]:bg-gray-200
+          [&::-webkit-scrollbar-thumb]:rounded-full
+          hover:[&::-webkit-scrollbar-thumb]:bg-gray-300
+          [scrollbar-width:thin]
+          [scrollbar-color:theme(colors.gray.200)_transparent]"
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-[900] text-[#1a1a1a]">History Auction Details</h2>
           <button 
@@ -51,7 +58,6 @@ const HistoryAuctionModal = ({ isOpen, onClose }: HistoryAuctionModalProps) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Side: Images */}
           <div className="space-y-4">
             <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden border border-gray-100">
               <Image 
@@ -71,7 +77,6 @@ const HistoryAuctionModal = ({ isOpen, onClose }: HistoryAuctionModalProps) => {
             </div>
           </div>
 
-          {/* Right Side: Info */}
           <div className="space-y-4">
             <h3 className="text-2xl font-black text-gray-900">ASUS ROG Strix G16 Gaming Laptop</h3>
             
@@ -96,7 +101,6 @@ const HistoryAuctionModal = ({ isOpen, onClose }: HistoryAuctionModalProps) => {
           </div>
         </div>
 
-        {/* Bid History Table */}
         <div className="mt-10">
           <h4 className="text-red-600 font-black text-lg underline decoration-2 underline-offset-8 mb-6">Bid History</h4>
           <div className="w-full border border-gray-100 rounded-2xl overflow-hidden">
