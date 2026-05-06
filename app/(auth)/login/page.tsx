@@ -16,25 +16,21 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
   
-  // State để lấy giá trị input
   const [identity, setIdentity] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // LOGIC GIẢ LẬP NHẬN DIỆN ROLE
-    // Sau này má thay đoạn này bằng việc gọi API, API trả về role nào thì login role đó
     if (identity.includes("admin")) {
       login({ role: "admin", token: "admin-token" });
-      router.push("/admin/dashboard"); // Trang dành cho Admin
+      router.push("/admin/dashboard");
     } else if (identity.includes("seller")) {
       login({ role: "seller", token: "seller-token" });
-      router.push("/seller/dashboard"); // Trang dành cho Seller
+      router.push("/seller/dashboard");
     } else {
-      // Mặc định là Bidder
       login({ role: "bidder", token: "bidder-token" });
-      router.push("/bidder-home"); // Trang dành cho Bidder
+      router.push("/bidder-home");
     }
   };
 
@@ -52,7 +48,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      <div className="w-full lg:w-2/3 flex flex-col justify-center px-8 md:px-20 lg:px-32 relative">
+      <div className="w-full lg:w-2/3 flex flex-col justify-center px-8 md:px-20 lg:px-32 relative pt-32 pb-12">
         
         <div className="absolute top-10 left-8 md:left-20 lg:left-32">
           <Link href="/home" className="flex items-center gap-2">
@@ -123,7 +119,7 @@ export default function LoginPage() {
             <div className="pt-4">
               <button
                 type="submit"
-                className="w-full h-14 bg-blue-600 text-white font-[900] text-xl rounded-full shadow-lg hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all"
+                className="w-full h-14 bg-blue-600 text-white font-[900] text-xl rounded-full shadow-lg hover:bg-blue-700 hover:scale-[1.01] transition-all"
               >
                 Login
               </button>

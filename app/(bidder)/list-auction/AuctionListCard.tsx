@@ -13,6 +13,16 @@ interface AuctionItemProps {
   endDate?: string;
 }
 
+const formatDate = (dateString?: string) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 export const AuctionListCard = ({ id, image, title, status, openDate, endDate }: AuctionItemProps) => {
   const statusColors = {
     Upcoming: 'text-yellow-500',
@@ -37,8 +47,8 @@ export const AuctionListCard = ({ id, image, title, status, openDate, endDate }:
 
       <div className="space-y-1 mb-6 text-sm font-bold flex-grow">
         <p className="text-gray-600">Status: <span className={statusColors[status]}>{status}</span></p>
-        <p className="text-gray-600">Open: {openDate}</p>
-        {endDate && <p className="text-gray-600">End: {endDate}</p>}
+        <p className="text-gray-600">Open: {formatDate(openDate)}</p>
+        {endDate && <p className="text-gray-600">End: {formatDate(endDate)}</p>}
       </div>
 
       <Link href={`/list-auction/${id}`} className="w-full block">

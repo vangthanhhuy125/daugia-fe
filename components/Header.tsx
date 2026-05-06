@@ -128,11 +128,11 @@ const Header = () => {
                 <div ref={menuRef} className="absolute right-20 mt-48 w-72 bg-white border border-gray-100 rounded-2xl shadow-2xl py-3 z-[60] overflow-hidden animate-in fade-in slide-in-from-top-2">
                   {!showNotifications ? (
                     <div className="flex flex-col">
-                      <Link href={role === 'seller' ? "/seller/profile" : "/profile"} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors group">
+                      <Link href={role === 'seller' ? "/seller/profile" : "/bidder-profile"} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors group">
                         <User size={18} className="text-gray-400 group-hover:text-[#d32f2f]" />
                         <span className="text-sm font-bold text-gray-700">{role === 'seller' ? 'Seller Profile' : 'Personal Profile'}</span>
                       </Link>
-                      <Link href={role === 'seller' ? "/seller/change-password" : "/change-password"} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors group">
+                      <Link href={role === 'seller' ? "/seller/change-password" : "/bidder-change-password"} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors group">
                         <Lock size={18} className="text-gray-400 group-hover:text-[#d32f2f]" />
                         <span className="text-sm font-bold text-gray-700">Change Password</span>
                       </Link>
@@ -228,7 +228,7 @@ const Header = () => {
           <div className="pt-4 flex flex-col gap-3 border-t border-gray-50">
             {isLoggedIn ? (
               <>
-                <Link href={role === 'seller' ? "/seller/profile" : "/profile"} className="text-gray-700 font-bold tracking-wider">Personal Profile</Link>
+                <Link href={role === 'seller' ? "/seller/profile" : "/bidder-profile"} className="text-gray-700 font-bold tracking-wider">Personal Profile</Link>
                 <button onClick={() => setShowLogoutModal(true)} className="flex items-center gap-2 text-[#d32f2f] font-bold tracking-wider">
                   <LogOut size={18} /> Log Out
                 </button>
@@ -245,28 +245,28 @@ const Header = () => {
 
       {showLogoutModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 scale-in-center animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 scale-in-center animate-in zoom-in-95 duration-200">
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
-                <AlertCircle size={32} className="text-[#d32f2f]" />
+              <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle size={28} className="text-[#d32f2f]" />
               </div>
-              <h3 className="text-2xl font-[900] text-gray-900 mb-2">Logout</h3>
-              <p className="text-gray-500 font-medium mb-8">
-                Bạn có chắc chắn muốn thoát phiên làm việc không?
+              <h3 className="text-xl font-[900] text-gray-900 mb-2">Log out</h3>
+              <p className="text-sm text-gray-500 font-medium mb-8">
+                Are you sure you want to log out?
               </p>
               
-              <div className="flex flex-col w-full gap-3">
-                <button 
-                  onClick={confirmLogout}
-                  className="w-full py-4 bg-[#d32f2f] text-white font-[900] rounded-full shadow-lg hover:bg-red-700 transition active:scale-95"
-                >
-                  Xác nhận thoát
-                </button>
+              <div className="flex w-full gap-3">
                 <button 
                   onClick={() => setShowLogoutModal(false)}
-                  className="w-full py-4 bg-gray-100 text-gray-700 font-bold rounded-full hover:bg-gray-200 transition active:scale-95"
+                  className="flex-1 py-3 bg-gray-100 text-gray-700 text-sm font-bold rounded-full hover:bg-gray-200 transition active:scale-95"
                 >
-                  Hủy bỏ
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmLogout}
+                  className="flex-1 py-3 bg-[#d32f2f] text-white text-sm font-[900] rounded-full shadow-lg hover:bg-red-700 transition active:scale-95"
+                >
+                  Confirm
                 </button>
               </div>
             </div>
