@@ -27,7 +27,7 @@ export default function LoginPage() {
       router.push("/admin/dashboard");
     } else if (identity.includes("seller")) {
       login({ role: "seller", token: "seller-token" });
-      router.push("/seller/dashboard");
+      router.push("/seller-profile");
     } else {
       login({ role: "bidder", token: "bidder-token" });
       router.push("/bidder-home");

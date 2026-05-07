@@ -2,16 +2,17 @@
 
 import React, { useRef, useState, useCallback } from "react";
 import Image from "next/image";
-import { Camera, MessageSquare, Edit3, X, Check } from "lucide-react";
+import { Camera, MessageSquare, Edit3, X, Check, PlusCircle } from "lucide-react";
 import Cropper from "react-easy-crop";
 
-interface BidderProfileHeaderProps {
+interface ProfileHeaderProps {
   name: string;
   role: string;
   avatarUrl: string;
   bannerUrl: string;
   onFeedbackClick: () => void;
   onEditClick: () => void;
+  onCreateAuctionClick?: () => void;
 }
 
 const getCroppedImg = (imageSrc: string, pixelCrop: any): Promise<string> => {
@@ -41,14 +42,15 @@ const getCroppedImg = (imageSrc: string, pixelCrop: any): Promise<string> => {
   });
 };
 
-export const BidderProfileHeader = ({
+export const ProfileHeader = ({
   name,
   role,
   avatarUrl,
   bannerUrl,
   onFeedbackClick,
   onEditClick,
-}: BidderProfileHeaderProps) => {
+  onCreateAuctionClick,
+}: ProfileHeaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [currentAvatar, setCurrentAvatar] = useState(avatarUrl); 
@@ -181,11 +183,18 @@ export const BidderProfileHeader = ({
             <p className="text-xl font-[900] italic text-[#0f172a] mt-1">{role}</p>
           </div>
 
-          <div className="flex gap-3 pb-2">
-            <button onClick={onFeedbackClick} className="flex items-center gap-2 bg-[#ff0000] text-white px-8 py-3.5 rounded-2xl font-black text-sm hover:bg-red-700 transition-all shadow-lg shadow-red-100">
+          <div className="flex flex-wrap justify-center gap-3 pb-2">
+            <button onClick={onFeedbackClick} className="flex items-center gap-2 bg-[#ff0000] text-white px-6 py-3.5 rounded-full font-black text-sm hover:bg-red-700 transition-all shadow-lg shadow-red-100">
               <MessageSquare size={18} fill="white" /> Feedback
             </button>
-            <button onClick={onEditClick} className="flex items-center gap-2 bg-[#f1f5f9] text-[#0f172a] px-8 py-3.5 rounded-2xl font-black text-sm hover:bg-gray-200 transition-all">
+            
+            {role.toLowerCase() === "seller" && (
+              <button onClick={onCreateAuctionClick} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-full font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+                <PlusCircle size={18} fill="white" className="text-blue-600" /> Create New Auction
+              </button>
+            )}
+
+            <button onClick={onEditClick} className="flex items-center gap-2 bg-[#e5e7eb] text-[#0f172a] px-6 py-3.5 rounded-full font-black text-sm hover:bg-gray-300 transition-all">
               <Edit3 size={18} /> Edit Profile
             </button>
           </div>

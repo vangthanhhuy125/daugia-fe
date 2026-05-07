@@ -3,16 +3,27 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
 
-export const BidderSidebar = () => {
+export const Sidebar = () => {
   const pathname = usePathname();
+  const { role } = useAuth(); 
+  const currentRole = role || "bidder"; 
   
-  const menuItems = [
+  const bidderMenu = [
     { name: "Profile", href: "/bidder-profile" },
     { name: "Auctions", href: "/bidder-auctions" },
     { name: "Payments", href: "/bidder-payments" },
     { name: "Statistics", href: "/bidder-statistics" },
   ];
+
+  const sellerMenu = [
+    { name: "Profile", href: "/seller-profile" },
+    { name: "Auctions", href: "/seller-auctions" },
+    { name: "Statistics", href: "/seller-statistics" },
+  ];
+
+  const menuItems = currentRole === "seller" ? sellerMenu : bidderMenu;
 
   return (
     <div className="md:col-span-3 flex flex-col md:grid md:grid-cols-3 gap-0 mb-8 md:mb-0">

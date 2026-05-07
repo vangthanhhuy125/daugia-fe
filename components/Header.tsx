@@ -68,9 +68,7 @@ const Header = () => {
           <span className="text-xl tracking-tighter">
             <span className="font-[900] text-[#1a1a1a]">Smart</span>
             <span className="font-light text-[#1a1a1a]">Auction</span>
-            {isLoggedIn && role === 'seller' && (
-              <span className="ml-2 px-2 py-0.5 bg-black text-white text-[10px] font-bold rounded uppercase">Seller</span>
-            )}
+            
           </span>
         </Link>
 
@@ -90,17 +88,6 @@ const Header = () => {
               </div>
               <Link href="/about" className="text-[15px] font-medium text-gray-800 hover:text-[#d32f2f] transition tracking-wider">About Us</Link>
               <Link href="/contact" className="text-[15px] font-medium text-gray-800 hover:text-[#d32f2f] transition tracking-wider">Contact</Link>
-            </>
-          ) : role === 'seller' ? (
-            <>
-              <Link href="/seller/dashboard" className="flex items-center gap-2 text-[15px] font-bold text-gray-800 hover:text-[#d32f2f] transition">
-                <LayoutDashboard size={18} />
-                Dashboard
-              </Link>
-              <Link href="/seller/create-auction" className="flex items-center gap-2 px-4 py-2 bg-[#d32f2f] text-white rounded-full text-[14px] font-bold hover:bg-red-700 transition shadow-sm">
-                <PlusCircle size={18} />
-                Create Auction
-              </Link>
             </>
           ) : null}
         </nav>

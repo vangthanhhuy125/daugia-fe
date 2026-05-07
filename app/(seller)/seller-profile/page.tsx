@@ -4,17 +4,22 @@ import React, { useState } from "react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { ProfileHeader } from "@/components/ProfileHeader";
-import { Sidebar } from "@/components/Sidebar";
+import { ProfileHeader } from "@/components/ProfileHeader"; 
+import { Sidebar } from "@/components/Sidebar"; 
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { EditProfileModal } from "@/components/EditProfileModal";
+import { CreateAuctionModal } from "@/components/CreateAuctionModal";
+import { useRouter } from "next/navigation";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
-export default function UserProfilePage() {
+export default function SellerProfilePage() {
+  const router = useRouter();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
+  // State lưu trữ data giống hệt format của Bidder
   const [userData, setUserData] = useState({
     fullname: "Nguyen Van Huy",
     email: "nguyenvanhuy@gmail.com",
@@ -24,6 +29,7 @@ export default function UserProfilePage() {
     ward: "Thu Duc Ward"
   });
 
+  // Mảng mapping data
   const profileData = [
     { label: "Fullname:", value: userData.fullname },
     { label: "Email:", value: userData.email, isLink: true },
@@ -44,21 +50,22 @@ export default function UserProfilePage() {
 
         <ProfileHeader 
           name={userData.fullname}
-          role="Bidder"
+          role="Seller" 
           avatarUrl="/avatar.jfif"
           bannerUrl="/banner.jpg"
           onFeedbackClick={() => setIsFeedbackOpen(true)}
           onEditClick={() => setIsEditModalOpen(true)}
+          onCreateAuctionClick={() => setIsCreateModalOpen(true)}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mt-12 px-4">
           <Sidebar />
 
-          <section className="md:col-span-9 space-y-8">
+          <section className="md:col-span-9 space-y-6">
             {profileData.map((row, idx) => (
-              <div key={idx} className="grid grid-cols-1 md:grid-cols-4 items-start gap-2 md:gap-8 text-lg">
+              <div key={idx} className="grid grid-cols-1 md:grid-cols-4 items-start gap-2 md:gap-8 text-[15px]">
                 <span className="font-black text-[#0f172a] whitespace-nowrap">{row.label}</span>
-                <span className={`font-medium md:col-span-3 ${row.isLink ? "text-blue-600 underline cursor-pointer" : "text-gray-700"} leading-relaxed`}>
+                <span className={`font-medium md:col-span-3 ${row.isLink ? "text-blue-600 underline cursor-pointer hover:text-blue-800 transition-colors" : "text-gray-700"} leading-relaxed`}>
                   {row.value}
                 </span>
               </div>
@@ -81,6 +88,11 @@ export default function UserProfilePage() {
           setUserData(newData);
           setIsEditModalOpen(false);
         }}
+      />
+
+      <CreateAuctionModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
       />
 
       <Footer />

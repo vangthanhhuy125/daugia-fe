@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { BidderProfileHeader } from "@/components/BidderProfileHeader";
-import { BidderSidebar } from "@/components/BidderSidebar";
+import { ProfileHeader } from "@/components/ProfileHeader";
+import { Sidebar } from "@/components/Sidebar";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { EditProfileModal } from "@/components/EditProfileModal";
 
@@ -42,7 +42,7 @@ export default function UserProfilePage() {
            <p className="text-sm font-medium text-gray-400">Home {'>'} <span className="text-gray-400">User Profile</span></p>
         </div>
 
-        <BidderProfileHeader 
+        <ProfileHeader 
           name={userData.fullname}
           role="Bidder"
           avatarUrl="/avatar.jfif"
@@ -52,7 +52,7 @@ export default function UserProfilePage() {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mt-12 px-4">
-          <BidderSidebar />
+          <Sidebar />
 
           <section className="md:col-span-9 space-y-8">
             {profileData.map((row, idx) => (

@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { BidderProfileHeader } from "@/components/BidderProfileHeader";
-import { BidderSidebar } from "@/components/BidderSidebar";
+import { BidderProfileHeader } from "@/components/ProfileHeader";
+import { BidderSidebar } from "@/components/Sidebar";
 import { StatCard } from "./StatCard";
 import { Gavel, CheckCircle, Trophy, Wallet } from "lucide-react";
 import { 
