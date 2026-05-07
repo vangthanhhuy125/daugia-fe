@@ -10,32 +10,32 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ProfileHeader } from "@/components/ProfileHeader";
 import { Sidebar } from "@/components/Sidebar";
-import AuctionCard from "./AuctionCard";
+import SellerAuctionCard from "./AuctionCard";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { EditProfileModal } from "@/components/EditProfileModal";
+import { CreateAuctionModal } from "@/components/CreateAuctionModal";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
-export default function BidderAuctionsPage() {
-  const [activeTab, setActiveTab] = useState<"Watching" | "Participating" | "History">("Watching");
+export default function SellerAuctionsPage() {
+  const [activeTab, setActiveTab] = useState<"Upcoming" | "Live" | "Ended">("Upcoming");
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("All category");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [historyStatus, setHistoryStatus] = useState("All status");
 
-  const tabs = ["Watching", "Participating", "History"];
+  const tabs = ["Upcoming", "Live", "Ended"];
   
   const allAuctions = [
-    { id: "1", title: "Laptop Gaming MSI", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Starting Bid", image: "/laptop-image.png", status: "Watching" },
-    { id: "2", title: "Laptop Gaming Dell", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Starting Bid", image: "/laptop-image.png", status: "Watching" },
-    { id: "3", title: "Laptop Gaming ASUS", category: "Electronics", time: "10/3/2026 09:00:00", price: "15,500,000 VND", priceLabel: "Current Bid", image: "/laptop-image.png", status: "Participating", isLeading: true },
-    { id: "6", title: "Laptop Gaming ABCDS", category: "Electronics", time: "10/3/2026 09:00:00", price: "15,500,000 VND", priceLabel: "Current Bid", image: "/laptop-image.png", status: "Participating", isLeading: false },
-    { id: "4", title: "Laptop Gaming HP", category: "Electronics", time: "10/3/2026 09:00:00", price: "20,000,000 VND", priceLabel: "Winning Bid", image: "/laptop-image.png", status: "History", result: "won" },
-    { id: "5", title: "Laptop Gaming Razer", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Final Bid", image: "/laptop-image.png", status: "History", result: "lost" },
+    { id: "1", title: "Laptop Gaming MSI", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Starting Bid", image: "/laptop-image.png", status: "Upcoming" },
+    { id: "2", title: "Laptop Gaming Dell", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Starting Bid", image: "/laptop-image.png", status: "Upcoming" },
+    { id: "3", title: "Laptop Gaming ASUS", category: "Electronics", time: "10/3/2026 09:00:00", price: "15,500,000 VND", priceLabel: "Current Bid", image: "/laptop-image.png", status: "Live" },
+    { id: "4", title: "Laptop Gaming HP", category: "Electronics", time: "10/3/2026 09:00:00", price: "20,000,000 VND", priceLabel: "Winning Bid", image: "/laptop-image.png", status: "Ended", result: "sold" },
+    { id: "5", title: "Laptop Gaming Razer", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Final Bid", image: "/laptop-image.png", status: "Ended", result: "unsold" },
   ];
 
   const handleReset = () => {
@@ -43,7 +43,6 @@ export default function BidderAuctionsPage() {
     setCategory("All category");
     setStartDate(null);
     setEndDate(null);
-    setHistoryStatus("All status");
   };
 
   const filteredAuctions = allAuctions.filter(item => {
@@ -74,11 +73,12 @@ export default function BidderAuctionsPage() {
 
         <ProfileHeader 
           name="Nguyen Van Huy"
-          role="Bidder"
+          role="Seller"
           avatarUrl="/avatar.jfif"
           bannerUrl="/banner.jpg"
           onFeedbackClick={() => setIsFeedbackOpen(true)}
           onEditClick={() => setIsEditOpen(true)}
+          onCreateAuctionClick={() => setIsCreateModalOpen(true)}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mt-12 px-4">
@@ -173,7 +173,7 @@ export default function BidderAuctionsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredAuctions.length > 0 ? (
                 filteredAuctions.map((item) => (
-                  <AuctionCard 
+                  <SellerAuctionCard 
                     key={item.id} 
                     id={item.id}
                     title={item.title}
@@ -183,7 +183,6 @@ export default function BidderAuctionsPage() {
                     priceLabel={item.priceLabel}
                     status={item.status.toLowerCase() as any}
                     result={item.result as any}
-                    isLeading={item.isLeading}
                   />
                 ))
               ) : (
@@ -203,6 +202,10 @@ export default function BidderAuctionsPage() {
         onClose={() => setIsEditOpen(false)} 
         onConfirm={() => setIsEditOpen(false)}
         initialData={{ fullname: "Nguyen Van Huy", email: "huy@gmail.com", phone: "123", street: "96", province: "HCM", ward: "Thu Duc" }}
+      />
+      <CreateAuctionModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
       />
       
       <Footer />
