@@ -14,6 +14,9 @@ import SellerAuctionCard from "./AuctionCard";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { CreateAuctionModal } from "@/components/CreateAuctionModal";
+import { UpcomingModal } from "./UpcomingModal";
+import { LiveModal } from "./LiveModal";
+import { EndedModal } from "./EndedModal";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -22,6 +25,9 @@ export default function SellerAuctionsPage() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const [selectedModalType, setSelectedModalType] = useState<"upcoming" | "live" | "ended" | null>(null);
+  const [selectedAuctionId, setSelectedAuctionId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("All category");
@@ -34,8 +40,8 @@ export default function SellerAuctionsPage() {
     { id: "1", title: "Laptop Gaming MSI", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Starting Bid", image: "/laptop-image.png", status: "Upcoming" },
     { id: "2", title: "Laptop Gaming Dell", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Starting Bid", image: "/laptop-image.png", status: "Upcoming" },
     { id: "3", title: "Laptop Gaming ASUS", category: "Electronics", time: "10/3/2026 09:00:00", price: "15,500,000 VND", priceLabel: "Current Bid", image: "/laptop-image.png", status: "Live" },
-    { id: "4", title: "Laptop Gaming HP", category: "Electronics", time: "10/3/2026 09:00:00", price: "20,000,000 VND", priceLabel: "Winning Bid", image: "/laptop-image.png", status: "Ended", result: "sold" },
-    { id: "5", title: "Laptop Gaming Razer", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Final Bid", image: "/laptop-image.png", status: "Ended", result: "unsold" },
+    { id: "4", title: "Laptop Gaming HP", category: "Electronics", time: "10/3/2026 09:00:00", price: "20,000,000 VND", priceLabel: "Winning Bid", image: "/laptop-image.png", status: "Ended"},
+    { id: "5", title: "Laptop Gaming Razer", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Final Bid", image: "/laptop-image.png", status: "Ended" },
   ];
 
   const handleReset = () => {
@@ -58,6 +64,16 @@ export default function SellerAuctionsPage() {
   });
 
   const filterInputClass = "bg-[#f5f5f5] rounded-xl px-6 py-3 outline-none border-none focus:ring-2 ring-gray-200 transition-all text-sm font-medium w-full h-12";
+
+  const handleDetailsClick = (id: string, status: "upcoming" | "live" | "ended") => {
+    setSelectedAuctionId(id);
+    setSelectedModalType(status);
+  };
+
+  const closeDetailsModal = () => {
+    setSelectedModalType(null);
+    setSelectedAuctionId(null);
+  };
 
   return (
     <div className={`${jost.className} min-h-screen flex flex-col bg-white text-[#1a1a1a]`}>
@@ -182,7 +198,7 @@ export default function SellerAuctionsPage() {
                     price={item.price}
                     priceLabel={item.priceLabel}
                     status={item.status.toLowerCase() as any}
-                    result={item.result as any}
+                    onDetailsClick={handleDetailsClick}
                   />
                 ))
               ) : (
@@ -206,6 +222,19 @@ export default function SellerAuctionsPage() {
       <CreateAuctionModal 
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)} 
+      />
+
+      <UpcomingModal 
+        isOpen={selectedModalType === "upcoming"} 
+        onClose={closeDetailsModal} 
+      />
+      <LiveModal 
+        isOpen={selectedModalType === "live"} 
+        onClose={closeDetailsModal} 
+      />
+      <EndedModal 
+        isOpen={selectedModalType === "ended"} 
+        onClose={closeDetailsModal} 
       />
       
       <Footer />

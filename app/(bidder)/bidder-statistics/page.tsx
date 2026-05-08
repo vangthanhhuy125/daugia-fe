@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { BidderProfileHeader } from "@/components/ProfileHeader";
-import { BidderSidebar } from "@/components/Sidebar";
+import { ProfileHeader } from "@/components/ProfileHeader";
+import { Sidebar } from "@/components/Sidebar";
 import { StatCard } from "./StatCard";
 import { Gavel, CheckCircle, Trophy, Wallet } from "lucide-react";
 import { 
@@ -44,7 +44,7 @@ export default function BidderStatisticsPage() {
           <p className="text-sm font-medium text-gray-400">Home {">"} Statistics</p>
         </nav>
 
-        <BidderProfileHeader
+        <ProfileHeader
           name="Nguyen Van Huy"
           role="Bidder"
           avatarUrl="/avatar.jfif"
@@ -54,7 +54,7 @@ export default function BidderStatisticsPage() {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mt-12 px-4">
-          <BidderSidebar />
+          <Sidebar />
 
           <section className="md:col-span-9 space-y-12">
             {/* Overview Cards */}
