@@ -29,7 +29,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return (
       <div className="bg-white p-2.5 border border-gray-100 rounded-lg shadow-sm flex flex-col gap-1">
         <p className="font-medium text-gray-600 text-xs">{`Date: ${label}`}</p>
-        <p className="font-semibold text-gray-900 text-xs">{`Revenue: ${formatVND(payload[0].value)}`}</p>
+        <p className="font-semibold text-gray-900 text-xs">{`Revenue: ${new Intl.NumberFormat('en-US').format(payload[0].value)} VND`}</p>
       </div>
     );
   }

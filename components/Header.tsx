@@ -115,7 +115,7 @@ const Header = () => {
                 <div ref={menuRef} className="absolute right-20 mt-48 w-72 bg-white border border-gray-100 rounded-2xl shadow-2xl py-3 z-[60] overflow-hidden animate-in fade-in slide-in-from-top-2">
                   {!showNotifications ? (
                     <div className="flex flex-col">
-                      <Link href={role === 'seller' ? "/seller/profile" : "/bidder-profile"} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors group">
+                      <Link href={role === 'seller' ? "/seller-profile" : "/bidder-profile"} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors group">
                         <User size={18} className="text-gray-400 group-hover:text-[#d32f2f]" />
                         <span className="text-sm font-bold text-gray-700">{role === 'seller' ? 'Seller Profile' : 'Personal Profile'}</span>
                       </Link>

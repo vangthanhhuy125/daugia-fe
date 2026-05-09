@@ -59,8 +59,21 @@ export default function SellerAuctionsPage() {
     const matchesCategory = category === "All category" 
       ? true 
       : item.category === category;
-    
-    return matchesTab && matchesSearch && matchesCategory;
+
+    const [datePart] = item.time.split(" ");
+    const [day, month, year] = datePart.split("/").map(Number);
+    const itemDate = new Date(year, month - 1, day);
+
+    let matchesDate = true;
+    if (startDate && endDate) {
+      matchesDate = itemDate >= startDate && itemDate <= endDate;
+    } else if (startDate) {
+      matchesDate = itemDate >= startDate;
+    } else if (endDate) {
+      matchesDate = itemDate <= endDate;
+    }
+
+    return matchesTab && matchesSearch && matchesCategory && matchesDate;
   });
 
   const filterInputClass = "bg-[#f5f5f5] rounded-xl px-6 py-3 outline-none border-none focus:ring-2 ring-gray-200 transition-all text-sm font-medium w-full h-12";
@@ -73,6 +86,20 @@ export default function SellerAuctionsPage() {
   const closeDetailsModal = () => {
     setSelectedModalType(null);
     setSelectedAuctionId(null);
+  };
+  
+  const handleStartDateChange = (date: Date | null) => {
+    setStartDate(date);
+    if (date && endDate && date > endDate) {
+      setEndDate(date);
+    }
+  };
+
+  const handleEndDateChange = (date: Date | null) => {
+    setEndDate(date);
+    if (date && startDate && date < startDate) {
+      setStartDate(date);
+    }
   };
 
   return (
@@ -135,7 +162,11 @@ export default function SellerAuctionsPage() {
                   <div className="relative">
                     <DatePicker
                       selected={startDate}
-                      onChange={(date: Date | null) => setStartDate(date)}
+                      onChange={handleStartDateChange}
+                      selectsStart
+                      startDate={startDate}
+                      endDate={endDate}
+                      maxDate={endDate || undefined}
                       placeholderText="dd/mm/yyyy"
                       dateFormat="dd/MM/yyyy"
                       className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#d32f2f] transition-all"
@@ -149,10 +180,13 @@ export default function SellerAuctionsPage() {
                   <div className="relative">
                     <DatePicker
                       selected={endDate}
-                      onChange={(date: Date | null) => setEndDate(date)}
+                      onChange={handleEndDateChange} 
+                      selectsEnd
+                      startDate={startDate}
+                      endDate={endDate}
+                      minDate={startDate || undefined}
                       placeholderText="dd/mm/yyyy"
                       dateFormat="dd/MM/yyyy"
-                      minDate={startDate || undefined}
                       className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#d32f2f] transition-all"
                     />
                     <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" size={18} />
@@ -204,7 +238,7 @@ export default function SellerAuctionsPage() {
               ) : (
                 <div className="col-span-full py-20 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
                   <Search size={48} className="mb-4 opacity-10" />
-                  <p className="font-[900] tracking-widest text-lg uppercase">No results found</p>
+                  <p className="font-[900] tracking-widest text-lg">No results found</p>
                 </div>
               )}
             </div>

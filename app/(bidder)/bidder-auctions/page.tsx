@@ -60,6 +60,20 @@ export default function BidderAuctionsPage() {
 
   const filterInputClass = "bg-[#f5f5f5] rounded-xl px-6 py-3 outline-none border-none focus:ring-2 ring-gray-200 transition-all text-sm font-medium w-full h-12";
 
+    const handleStartDateChange = (date: Date | null) => {
+    setStartDate(date);
+    if (date && endDate && date > endDate) {
+      setEndDate(date);
+    }
+  };
+
+  const handleEndDateChange = (date: Date | null) => {
+    setEndDate(date);
+    if (date && startDate && date < startDate) {
+      setStartDate(date);
+    }
+  };
+
   return (
     <div className={`${jost.className} min-h-screen flex flex-col bg-white text-[#1a1a1a]`}>
       <Header />
@@ -118,8 +132,11 @@ export default function BidderAuctionsPage() {
                   <label className="text-xs font-bold text-gray-400 ml-2">From date:</label>
                   <div className="relative">
                     <DatePicker
-                      selected={startDate}
-                      onChange={(date: Date | null) => setStartDate(date)}
+                      onChange={handleStartDateChange}
+                      selectsStart
+                      startDate={startDate}
+                      endDate={endDate}
+                      maxDate={endDate || undefined}
                       placeholderText="dd/mm/yyyy"
                       dateFormat="dd/MM/yyyy"
                       className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#d32f2f] transition-all"
@@ -133,10 +150,13 @@ export default function BidderAuctionsPage() {
                   <div className="relative">
                     <DatePicker
                       selected={endDate}
-                      onChange={(date: Date | null) => setEndDate(date)}
+                      onChange={handleEndDateChange}
+                      selectsEnd
+                      startDate={startDate}
+                      endDate={endDate}
+                      minDate={startDate || undefined}
                       placeholderText="dd/mm/yyyy"
                       dateFormat="dd/MM/yyyy"
-                      minDate={startDate || undefined}
                       className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#d32f2f] transition-all"
                     />
                     <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" size={18} />

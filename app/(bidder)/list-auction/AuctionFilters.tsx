@@ -27,7 +27,6 @@ export const AuctionFilters = ({ onFilterChange, initialStatus }: AuctionFilters
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
 
-  // Đồng bộ selectedStatus khi initialStatus từ trang Page thay đổi (do URL thay đổi)
   useEffect(() => {
     setSelectedStatus(initialStatus);
   }, [initialStatus]);
@@ -54,6 +53,20 @@ export const AuctionFilters = ({ onFilterChange, initialStatus }: AuctionFilters
     setSelectedStatus([]);
     setStartDate(null);
     setEndDate(null);
+  };
+
+  const handleStartDateChange = (date: Date | null) => {
+    setStartDate(date);
+    if (date && endDate && date > endDate) {
+      setEndDate(date);
+    }
+  };
+
+  const handleEndDateChange = (date: Date | null) => {
+    setEndDate(date);
+    if (date && startDate && date < startDate) {
+      setStartDate(date);
+    }
   };
 
   return (
@@ -101,8 +114,11 @@ export const AuctionFilters = ({ onFilterChange, initialStatus }: AuctionFilters
           <label className="text-xs font-bold text-gray-400 ml-2">From date:</label>
           <div className="relative custom-datepicker">
             <DatePicker
-              selected={startDate}
-              onChange={(date: Date | null) => setStartDate(date)}
+              onChange={handleStartDateChange}
+              selectsStart
+              startDate={startDate}
+              endDate={endDate}
+              maxDate={endDate || undefined}
               placeholderText="dd/mm/yyyy"
               dateFormat="dd/MM/yyyy"
               className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#CE2029] transition-all"
@@ -115,11 +131,13 @@ export const AuctionFilters = ({ onFilterChange, initialStatus }: AuctionFilters
           <label className="text-xs font-bold text-gray-400 ml-2">To date:</label>
           <div className="relative custom-datepicker">
             <DatePicker
-              selected={endDate}
-              onChange={(date: Date | null) => setEndDate(date)}
+              onChange={handleEndDateChange}
+              selectsEnd
+              startDate={startDate}
+              endDate={endDate}
+              minDate={startDate || undefined}
               placeholderText="dd/mm/yyyy"
               dateFormat="dd/MM/yyyy"
-              minDate={startDate || undefined}
               className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#CE2029] transition-all"
             />
             <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" size={18} />

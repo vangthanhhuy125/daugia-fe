@@ -138,7 +138,7 @@ export const ManageProductsTable = () => {
                     <td className="py-6 border-r border-gray-100">{item.date}</td>
                     <td className="py-6 border-r border-gray-100">{item.bids}</td>
                     <td className="py-6 border-r border-gray-100">{item.type}</td>
-                    <td className="py-6">{item.revenue.toLocaleString()} VND</td>
+                    <td className="py-6">{item.revenue.toLocaleString('en-US')} VND</td>
                     </tr>
                 );
                 })

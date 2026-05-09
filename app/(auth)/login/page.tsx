@@ -24,7 +24,7 @@ export default function LoginPage() {
 
     if (identity.includes("admin")) {
       login({ role: "admin", token: "admin-token" });
-      router.push("/admin/dashboard");
+      router.push("/admin-home");
     } else if (identity.includes("seller")) {
       login({ role: "seller", token: "seller-token" });
       router.push("/seller-profile");

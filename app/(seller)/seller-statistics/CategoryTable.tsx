@@ -62,7 +62,7 @@ export const CategoryTable = () => {
                     <td className="py-4 border-r border-gray-100 font-bold">{item.no}</td>
                     <td className="py-4 border-r border-gray-100">{item.category}</td>
                     <td className="py-4 border-r border-gray-100">{item.sold}</td>
-                    <td className="py-4">{item.revenue.toLocaleString()} VND</td>
+                    <td className="py-4">{item.revenue.toLocaleString('en-US')} VND</td>
                   </tr>
                 );
               })
@@ -71,7 +71,7 @@ export const CategoryTable = () => {
                 <td colSpan={4} className="py-12 text-center text-gray-400 font-bold">
                   <div className="flex flex-col items-center gap-2 opacity-30">
                     <Search size={48} strokeWidth={2} />
-                    <p className="text-lg">No results found"</p>
+                    <p className="text-lg">No results found</p>
                   </div>
                 </td>
               </tr>

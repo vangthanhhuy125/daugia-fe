@@ -52,18 +52,18 @@ const Footer = () => {
           
           {role === "admin" && (
             <ul className="space-y-3 text-gray-300 text-sm">
-              <li><Link href="/admin/dashboard" className="hover:text-white transition">Home</Link></li>
-              <li><Link href="/admin/auctions" className="hover:text-white transition">Auctions</Link></li>
-              <li><Link href="/admin/category" className="hover:text-white transition">Category</Link></li>
-              <li><Link href="/admin/feedback" className="hover:text-white transition">Feedback</Link></li>
+              <li><Link href="/admin-home" className="hover:text-white transition">Home</Link></li>
+              <li><Link href="/admin-auctions" className="hover:text-white transition">Auctions</Link></li>
+              <li><Link href="/admin-category" className="hover:text-white transition">Category</Link></li>
+              <li><Link href="/admin-feedback" className="hover:text-white transition">Feedback</Link></li>
             </ul>
           )}
 
           {role === "seller" && (
             <ul className="space-y-3 text-gray-300 text-sm">
-              <li><Link href="/seller/profile" className="hover:text-white transition">Profile</Link></li>
-              <li><Link href="/seller/auctions" className="hover:text-white transition">Auctions</Link></li>
-              <li><Link href="/seller/statistics" className="hover:text-white transition">Statistics</Link></li>
+              <li><Link href="/seller-profile" className="hover:text-white transition">Profile</Link></li>
+              <li><Link href="/seller-auctions" className="hover:text-white transition">Auctions</Link></li>
+              <li><Link href="/seller-statistics" className="hover:text-white transition">Statistics</Link></li>
             </ul>
           )}
 

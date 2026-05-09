@@ -9,7 +9,7 @@ export const Sidebar = () => {
   const pathname = usePathname();
   const { role } = useAuth(); 
   const currentRole = role || "bidder"; 
-  
+
   const bidderMenu = [
     { name: "Profile", href: "/bidder-profile" },
     { name: "Auctions", href: "/bidder-auctions" },
@@ -23,7 +23,26 @@ export const Sidebar = () => {
     { name: "Statistics", href: "/seller-statistics" },
   ];
 
-  const menuItems = currentRole === "seller" ? sellerMenu : bidderMenu;
+  const adminMenu = [
+    { name: "Home", href: "/admin-home" },
+    { name: "Auction", href: "/admin-auctions" },
+    { name: "Categories", href: "/admin-categories" },
+    { name: "Feedback", href: "/admin-feedback" },
+    { name: "Permissions", href: "/admin-permissions" },
+  ];
+
+  const getMenuItems = () => {
+    switch (currentRole) {
+      case "admin":
+        return adminMenu;
+      case "seller":
+        return sellerMenu;
+      default:
+        return bidderMenu;
+    }
+  };
+
+  const menuItems = getMenuItems();
 
   return (
     <div className="md:col-span-3 flex flex-col md:grid md:grid-cols-3 gap-0 mb-8 md:mb-0">
@@ -34,7 +53,7 @@ export const Sidebar = () => {
             <Link 
               key={item.name} 
               href={item.href}
-              className={`block whitespace-nowrap text-lg font-black transition-colors ${
+              className={`block whitespace-nowrap text-lg font-black transition-all relative ${
                 isActive ? "text-[#0f172a]" : "text-gray-300 hover:text-[#ff0000]"
               }`}
             >
