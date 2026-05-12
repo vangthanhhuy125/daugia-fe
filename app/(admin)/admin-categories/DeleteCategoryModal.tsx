@@ -1,44 +1,104 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 interface DeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  categoryName: string;
+  category: { name: string; totalProducts: number } | null;
+  onDelete: () => void;
 }
 
-export const DeleteCategoryModal = ({ isOpen, onClose, categoryName }: DeleteModalProps) => {
-  if (!isOpen) return null;
+export const DeleteCategoryModal = ({
+  isOpen,
+  onClose,
+  category,
+  onDelete,
+}: DeleteModalProps) => {
+  const [mounted, setMounted] = useState(false);
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-md rounded-[40px] p-10 relative text-center shadow-2xl animate-in fade-in zoom-in duration-200">
-        <button onClick={onClose} className="absolute right-8 top-8 text-black hover:scale-110 transition-transform">
-          <X size={32} strokeWidth={2.5} />
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !isOpen || !category) return null;
+
+  const canDelete = category.totalProducts === 0;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+          aria-label="Close modal"
+        >
+          <X size={20} strokeWidth={2.5} />
         </button>
-        
-        <h3 className="text-[#CE2029] text-3xl font-black mb-4">Delete Category</h3>
-        
-        <div className="space-y-1 mb-8">
-          <p className="text-gray-800 text-lg font-medium">
-            Are you sure you want to delete <span className="font-black italic">"{categoryName}"</span>?
-          </p>
-          <p className="text-gray-500">This action cannot be undone.</p>
-        </div>
-        
-        <div className="flex gap-4 justify-center">
-          <button 
-            onClick={onClose}
-            className="bg-[#FF6B00] text-white font-black px-8 py-3.5 rounded-full hover:opacity-90 transition-all min-w-[120px] shadow-lg shadow-orange-100 active:scale-95"
+
+        <div className="pt-2 text-center">
+          <h3 
+            className="text-2xl font-bold mb-4"
+            style={{ color: '#cc2229' }}
           >
-            Cancel
-          </button>
-          <button 
-            className="bg-[#CE2029] text-white font-black px-8 py-3.5 rounded-full hover:opacity-90 transition-all min-w-[120px] shadow-lg shadow-red-100 active:scale-95"
-          >
-            Delete
-          </button>
+            Delete Category
+          </h3>
+
+          {canDelete ? (
+            <>
+              <p className="text-base text-gray-800 mb-8 font-medium">
+                Are you sure you want to delete <span className="font-bold text-black">"{category.name}"</span>?
+                <br/>
+                This action cannot be undone.
+              </p>
+
+              <div className="flex flex-row justify-center gap-4 w-full">
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-3 rounded-full font-bold shadow-md transition-opacity hover:opacity-80 text-base"
+                  style={{ backgroundColor: '#ff6d00', color: '#ffffff' }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={() => {
+                    onDelete();
+                    onClose();
+                  }}
+                  className="flex-1 py-3 rounded-full font-bold shadow-md transition-opacity hover:opacity-80 text-base"
+                  style={{ backgroundColor: '#cc2229', color: '#ffffff' }}
+                >
+                  Delete
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-base text-gray-600 mb-6 font-medium">
+                Category <span className="font-bold text-gray-900">"{category.name}"</span> contains {category.totalProducts} product
+                {category.totalProducts > 1 ? "s" : ""} and cannot be deleted.
+              </p>
+
+              <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 text-left text-orange-700 mb-6">
+                <p className="font-bold text-base">Delete not allowed</p>
+                <p className="mt-1 text-sm font-medium">
+                  Only categories with no products can be removed.
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

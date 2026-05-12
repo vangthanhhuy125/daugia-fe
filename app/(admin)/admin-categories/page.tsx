@@ -19,7 +19,7 @@ interface Category {
   totalProducts: number;
 }
 
-const categories: Category[] = [
+const initialCategories: Category[] = [
   {
     id: 1,
     name: "Electronics",
@@ -44,6 +44,7 @@ export default function AdminCategoriesPage() {
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -175,16 +176,40 @@ export default function AdminCategoriesPage() {
 
       <Footer />
 
-      <CreateCategoryModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+      <CreateCategoryModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreate={({ name, description }) => {
+          setCategories((prev) => [
+            ...prev,
+            {
+              id: prev.length ? Math.max(...prev.map((cat) => cat.id)) + 1 : 1,
+              name,
+              description,
+              totalProducts: 0,
+            },
+          ]);
+        }}
+      />
       <EditCategoryModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         category={selectedCategory}
+        onUpdate={(updated) => {
+          setCategories((prev) => prev.map((cat) => cat.id === updated.id ? { ...cat, name: updated.name, description: updated.description } : cat));
+          setSelectedCategory((prev) => prev && prev.id === updated.id ? { ...prev, name: updated.name, description: updated.description } : prev);
+        }}
       />
       <DeleteCategoryModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        categoryName={selectedCategory?.name ?? ''}
+        category={selectedCategory}
+        onDelete={() => {
+          if (!selectedCategory) return;
+          setCategories((prev) => prev.filter((cat) => cat.id !== selectedCategory.id));
+          setSelectedCategory(null);
+          setIsDeleteModalOpen(false);
+        }}
       />
     </div>
   );
