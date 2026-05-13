@@ -17,7 +17,7 @@ interface AuctionFiltersProps {
     endDate: Date | null;
     status: string[];
   }) => void;
-  initialStatus: string[]; // Thêm prop này để nhận trạng thái từ URL
+  initialStatus: string[]; 
 }
 
 export const AuctionFilters = ({ onFilterChange, initialStatus }: AuctionFiltersProps) => {

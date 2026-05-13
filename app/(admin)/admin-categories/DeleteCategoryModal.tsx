@@ -36,13 +36,15 @@ export const DeleteCategoryModal = ({
         className="relative w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-          aria-label="Close modal"
-        >
-          <X size={20} strokeWidth={2.5} />
-        </button>
+        {!canDelete ? (
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            aria-label="Close modal"
+          >          
+            <X size={20} strokeWidth={2.5} />
+          </button>
+        ): null}
 
         <div className="pt-2 text-center">
           <h3 
