@@ -12,6 +12,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import AdminAuctionCard from "./AdminAuctionCard"; 
 import AuctionDetailModal from "./AuctionDetailModal";
+import AwaitingApprovalModal from "./AwaitingApprovalModal";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -59,6 +60,7 @@ export default function AdminAuctionsPage() {
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAwaitingModalOpen, setIsAwaitingModalOpen] = useState(false);
   const [selectedAuction, setSelectedAuction] = useState<any>(null);
 
   const handleResetFilters = () => {
@@ -78,11 +80,15 @@ export default function AdminAuctionsPage() {
   };
 
   const handleDetailsClick = (id: number) => {
-    const auction = activeTab === "sessions" 
-      ? mockSessions.find(i => i.id === id) 
-      : mockPending.find(i => i.id === id);
-    setSelectedAuction(auction);
-    setIsModalOpen(true);
+    if (activeTab === "sessions") {
+      const auction = mockSessions.find(i => i.id === id);
+      setSelectedAuction(auction);
+      setIsModalOpen(true);
+    } else {
+      const auction = mockPending.find(i => i.id === id);
+      setSelectedAuction(auction);
+      setIsAwaitingModalOpen(true);
+    }
   };
 
   const parseDate = (dateStr?: string) => {
@@ -338,6 +344,11 @@ export default function AdminAuctionsPage() {
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
           data={selectedAuction} 
+        />
+        <AwaitingApprovalModal
+          isOpen={isAwaitingModalOpen}
+          onClose={() => setIsAwaitingModalOpen(false)}
+          data={selectedAuction}
         />
       </main>
 
