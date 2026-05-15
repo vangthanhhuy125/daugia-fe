@@ -1,0 +1,279 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Jost } from "next/font/google";
+import { X } from "lucide-react";
+import { ProcessingHistoryModal } from "./ProcessingHistoryModal"; 
+
+const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "600", "700", "900"] });
+
+interface UserData {
+  id: number;
+  name: string;
+  joinDate: string;
+  role: "Seller" | "Bidder";
+  status: "Active" | "Blocked";
+  hasUnlockRequest: boolean;
+  email?: string;
+  phone?: string;
+  address?: string;
+  lockReason?: string;
+  requestReason?: string;
+}
+
+interface UserDetailsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  user: UserData | null;
+}
+
+export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsModalProps) {
+  const [view, setView] = useState<"details" | "block-confirm" | "unlock-review">("details");
+  const [blockReason, setBlockReason] = useState("");
+  const [unlockResponse, setUnlockResponse] = useState("");
+  const [confirmAction, setConfirmAction] = useState<null | "block" | "unlock" | "reject">(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setView("details");
+      setBlockReason("");
+      setUnlockResponse("");
+      setConfirmAction(null);
+    }
+  }, [isOpen, user]);
+
+  if (!isOpen || !user) return null;
+
+  const enriched: UserData = {
+    email: "nguyenvanhuy@gmail.com",
+    phone: "0123456789",
+    address: "No. 96, Street No. 12, Block 5, Thu Duc Ward, Ho Chi Minh City",
+    lockReason: "Your account has been temporarily locked due to suspicious bidding activity that violates our platform policies.",
+    requestReason: "I believe my account was locked by mistake. I did not engage in any suspicious activity. Please review and help unlock my account.",
+    ...user,
+  };
+
+  const isBlocked = enriched.status === "Blocked";
+  const hasUnlock = enriched.hasUnlockRequest;
+
+  const handleBlockClick = () => setView("block-confirm");
+  const handleConfirmBlock = () => {
+    onClose();
+  };
+  const handleCancelBlock = () => setView("details");
+
+  const handleUnlockClick = () => {
+    onClose();
+  };
+  const handleRejectClick = () => {
+    onClose();
+  };
+
+  const handleActionConfirm = () => {
+    if (confirmAction === "block") {
+      handleConfirmBlock();
+    } else if (confirmAction === "unlock") {
+      handleUnlockClick();
+    } else if (confirmAction === "reject") {
+      handleRejectClick();
+    }
+  };
+
+  const getConfirmMessage = () => {
+    if (confirmAction === "block") return "Are you sure you want to block this user?";
+    if (confirmAction === "unlock") return "Are you sure you want to unlock this user?";
+    if (confirmAction === "reject") return "Are you sure you want to reject this unlock request?";
+    return "";
+  };
+
+  return (
+    <div
+      className={`${jost.className} fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4`}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-[800px] overflow-hidden rounded-3xl bg-white shadow-2xl relative">
+
+        <div className="p-8">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-[22px] font-bold text-gray-900">User Details</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-900 hover:text-gray-600 transition"
+              aria-label="Close modal"
+            >
+              <X size={28} strokeWidth={2} />
+            </button>
+          </div>
+
+          <div className="space-y-8 max-h-[68vh] overflow-y-auto pr-2 custom-scrollbar">
+            {confirmAction && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 p-6">
+                <div className="w-full max-w-md rounded-[24px] bg-white p-6 shadow-2xl">
+                  <p className="text-lg font-bold text-center text-gray-900 mb-4">Confirm action</p>
+                  <p className="text-sm text-gray-700 mb-6">{getConfirmMessage()}</p>
+                  <div className="flex justify-center gap-4">
+                    <button
+                      onClick={() => setConfirmAction(null)}
+                      className="text-gray-700 text-sm font-semibold px-5 py-2 rounded-full border border-gray-300 bg-white transition-all hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleActionConfirm}
+                      className="text-white text-sm font-semibold px-5 py-2 rounded-full bg-[#107C41] transition-all hover:bg-[#0d6535]"
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="flex items-start gap-10">
+              <div
+                className="rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-amber-400 via-amber-300 to-orange-200"
+                style={{ width: 140, height: 140 }}
+              >
+                <svg viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full object-cover">
+                  <rect width="88" height="88" fill="#F5A623" rx="44" />
+                  <path d="M12 80 C12 62 28 54 44 54 C60 54 76 62 76 80" fill="#3B5998" />
+                  <circle cx="44" cy="36" r="18" fill="#F5C67A" />
+                  <path d="M26 30 C26 16 62 16 62 30 C62 22 56 16 44 16 C32 16 26 22 26 30Z" fill="#7B4F2E" />
+                  <path d="M35 54 L44 64 L53 54" fill="#4A6FA5" />
+                </svg>
+              </div>
+
+              <div className="flex-1 pt-1">
+                <div className="flex items-center gap-4 mb-1">
+                  <p className="text-2xl font-bold text-gray-900 leading-none">{enriched.name}</p>
+                  <button 
+                    className="text-white text-[13px] font-semibold px-4 py-1.5 rounded-full bg-[#107C41] transition-all hover:bg-[#0d6535] active:scale-95 leading-none"
+                    onClick={() => setIsHistoryModalOpen(true)}
+                  >
+                    Processing history
+                  </button>
+                </div>
+                <p className="text-lg font-bold italic text-gray-900 mb-5">{enriched.role}</p>
+
+                <div className="grid grid-cols-[130px_1fr] gap-y-3 text-[15px]">
+                  <span className="text-gray-900 font-bold">Email:</span>
+                  <span className="text-gray-900 underline underline-offset-2 cursor-pointer">{enriched.email}</span>
+
+                  <span className="text-gray-900 font-bold">Phone number:</span>
+                  <span className="text-gray-900">{enriched.phone}</span>
+
+                  <span className="text-gray-900 font-bold">Address:</span>
+                  <span className="text-gray-900">{enriched.address}</span>
+
+                  <span className="text-gray-900 font-bold">Join date:</span>
+                  <span className="text-gray-900">{enriched.joinDate}</span>
+
+                  <span className="text-gray-900 font-bold">Role:</span>
+                  <span className="text-gray-900">{enriched.role}</span>
+
+                  <span className="text-gray-900 font-bold flex items-center ">Status:</span>
+                  <div className="flex items-center gap-4">
+                    <span className={`font-bold ${isBlocked ? 'text-[#CE2029]' : 'text-blue-800'}`}>
+                      {enriched.status}
+                    </span>
+
+                    {/* Action buttons */}
+                    {!isBlocked && (
+                      <button
+                        onClick={handleBlockClick}
+                        className="text-white text-sm font-bold px-6 py-1.5 rounded-full transition-all hover:opacity-90 active:scale-95"
+                        style={{ background: "#CE2029" }}
+                      >
+                        Block
+                      </button>
+                    )}
+
+                    {isBlocked && hasUnlock && (
+                      <button
+                        className="text-white text-sm font-bold px-6 py-1.5 rounded-full transition-all hover:opacity-90 active:scale-95"
+                        style={{ background: "#0000FF" }} // Adjusted to match Figma blue
+                        onClick={() => setView("unlock-review")}
+                      >
+                        Unlock Request
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {view === "block-confirm" && (
+              <div className="rounded-[20px] border border-gray-300 bg-white p-6 relative">
+                <p className="text-[15px] font-bold text-gray-900 mb-3">Enter the reason for blocking the user</p>
+                <textarea
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                  rows={5}
+                  className="w-full border border-gray-300 rounded-sm p-3 text-[15px] text-gray-800 resize-none outline-none focus:border-gray-500 transition-colors"
+                />
+                <div className="flex justify-center gap-5 pt-4">
+                  <button
+                    onClick={() => setConfirmAction("block")}
+                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#CE2029] transition-all hover:bg-[#b71e26] active:scale-95"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={handleCancelBlock}
+                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#FF7F00] transition-all hover:bg-[#e67300] active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {view === "unlock-review" && (
+              <div className="rounded-[20px] border border-gray-300 bg-white p-6 relative">
+                <div className="grid grid-cols-[130px_1fr] gap-4 text-[15px] mb-4">
+                  <span className="font-bold text-gray-900">Lock reason</span>
+                  <span className="text-gray-900">{enriched.lockReason}</span>
+                </div>
+
+                <div className="grid grid-cols-[130px_1fr] gap-4 text-[15px] mb-4">
+                  <span className="font-bold text-gray-900">Request reason</span>
+                  <span className="text-gray-900">{enriched.requestReason}</span>
+                </div>
+
+                <div className="grid grid-cols-[130px_1fr] gap-4 text-[15px]">
+                  <span className="font-bold text-gray-900 mt-2">Response</span>
+                  <textarea
+                    value={unlockResponse}
+                    onChange={(e) => setUnlockResponse(e.target.value)}
+                    rows={4}
+                    className="w-full border border-gray-300 rounded-sm p-3 text-[15px] text-gray-800 resize-none outline-none focus:border-gray-500 transition-colors"
+                  />
+                </div>
+
+                <div className="flex justify-center gap-5 pt-6">
+                  <button
+                    onClick={() => setConfirmAction("reject")}
+                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#CE2029] transition-all hover:bg-[#b71e26] active:scale-95"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => setConfirmAction("unlock")}
+                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#0000FF] transition-all hover:bg-blue-800 active:scale-95"
+                  >
+                    Unlock
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <ProcessingHistoryModal 
+        isOpen={isHistoryModalOpen} 
+        onClose={() => setIsHistoryModalOpen(false)} 
+      />
+    </div>
+  );
+}

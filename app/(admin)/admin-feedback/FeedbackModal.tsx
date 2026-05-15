@@ -35,7 +35,7 @@ export const FeedbackModal = ({ isOpen, onClose, isReadOnly, data }: FeedbackMod
           <X size={24} strokeWidth={2.5} />
         </button>
 
-        <h2 className="text-2xl text-[#CE2029] font-bold mb-6 flex-shrink-0">Feedback</h2>
+        <h2 className="text-2xl font-bold mb-6 flex-shrink-0">Feedback</h2>
 
         {/* Nội dung chính */}
         <div className="overflow-y-auto pr-2 custom-scrollbar space-y-4 text-sm flex-grow">

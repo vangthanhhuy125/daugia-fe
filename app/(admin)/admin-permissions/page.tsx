@@ -5,6 +5,9 @@ import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Sidebar } from "@/components/Sidebar";
+import UserDetailsModal from "./UserDetailsModal";
+import AdminDetailsModal from "./AdminDetailsModal"; 
+import AdminFormModal, { AdminFormData } from "./AdminFormModal";
 import { Search, Calendar, Eye, LockKeyhole, RotateCcw, ArrowUpDown, Plus } from "lucide-react";
 import DatePicker from "react-datepicker";
 // @ts-ignore
@@ -53,6 +56,25 @@ export default function AdminPermissionsPage() {
   const [sortDesc, setSortDesc] = useState(true);
   const [isUnlockSorted, setIsUnlockSorted] = useState(false);
 
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+
+  const [selectedAdmin, setSelectedAdmin] = useState<AdminData | null>(null);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isAdminFormModalOpen, setIsAdminFormModalOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [adminToEdit, setAdminToEdit] = useState<AdminFormData | null>(null);
+
+  const handleOpenUserModal = (user: UserData) => {
+    setSelectedUser(user);
+    setIsUserModalOpen(true);
+  };
+
+  const handleOpenAdminModal = (admin: AdminData) => {
+    setSelectedAdmin(admin);
+    setIsAdminModalOpen(true);
+  };
+
   const handleReset = () => {
     setSearch("");
     setStartDate(null);
@@ -65,6 +87,35 @@ export default function AdminPermissionsPage() {
   const parseDate = (dStr: string) => {
     const [day, month, year] = dStr.split("/").map(Number);
     return new Date(year, month - 1, day);
+  };
+
+  const handleCreateAdmin = () => {
+    setFormMode("create");
+    setAdminToEdit(null);
+    setIsAdminFormModalOpen(true);
+  };
+
+  const handleEditAdmin = () => {
+    if (!selectedAdmin) return;
+    
+    const editData: AdminFormData = {
+      id: selectedAdmin.id,
+      fullname: "Nguyen Van Huy", 
+      displayName: selectedAdmin.displayName,
+      status: selectedAdmin.status,
+      email: "nguyenvanhuy@gmail.com",
+      phone: "0123456789",
+      street: "No. 96, Street No. 12, Block 5",
+      city: "Ho Chi Minh City",
+      ward: "Thu Duc Ward",
+      password: "123123", 
+      permissions: ["Auction", "Categories", "Feedback", "Permissions"],
+    };
+    
+    setFormMode("edit");
+    setAdminToEdit(editData);
+    setIsAdminModalOpen(false); 
+    setIsAdminFormModalOpen(true); 
   };
 
   const filteredUsers = useMemo(() => {
@@ -125,9 +176,22 @@ export default function AdminPermissionsPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="flex items-center gap-2">
-                <h3 className="text-[#CE2029] font-bold text-xl">Search</h3>
-                <button onClick={handleReset} className="p-1 hover:rotate-180 transition-transform duration-500 text-gray-400 hover:text-[#CE2029]"><RotateCcw size={18} strokeWidth={2.5}/></button>
+              <div className="flex items-center justify-between min-h-[44px]">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-[#CE2029] font-bold text-xl">Search</h3>
+                  <button onClick={handleReset} className="p-1 hover:rotate-180 transition-transform duration-500 text-gray-400 hover:text-[#CE2029]"><RotateCcw size={18} strokeWidth={2.5}/></button>
+                </div>
+
+                {activeTab === "admins" && (
+                  <button 
+                    type="button"
+                    onClick={handleCreateAdmin}
+                    className="relative z-[1] bg-blue-600 !opacity-100 visible text-white px-6 py-2.5 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg active:scale-95 border-none outline-none"
+                  >
+                    <Plus size={18} strokeWidth={3} className="text-white" /> 
+                    <span className="text-white">Create New Account</span>
+                  </button>
+                )}
               </div>
 
               <div className="flex flex-wrap items-end gap-4">
@@ -176,11 +240,6 @@ export default function AdminPermissionsPage() {
                     </div>
                   </div>
                 )}
-                {activeTab === "admins" && (
-                  <button className="ml-auto bg-[#0000FF] text-white px-6 py-2.5 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-blue-700 transition-colors">
-                    <Plus size={18} strokeWidth={3} /> Create New Account
-                  </button>
-                )}
               </div>
             </div>
 
@@ -210,7 +269,7 @@ export default function AdminPermissionsPage() {
                       <td className="py-4 pl-8 truncate">{activeTab === "users" ? item.name : item.displayName}</td>
                       <td className="py-4">{activeTab === "users" ? item.joinDate : item.creationDate}</td>
                       {activeTab === "users" && <td className="py-4">{item.role}</td>}
-                      <td className={`py-4 font-bold ${item.status === "Active" ? "text-[#0000FF]" : "text-[#CE2029]"}`}>{item.status}</td>
+                      <td className={`py-4 font-bold ${item.status === "Active" ? "text-blue-600" : "text-[#CE2029]"}`}>{item.status}</td>
                       
                       {activeTab === "users" && (
                         <td className="py-4">
@@ -224,13 +283,23 @@ export default function AdminPermissionsPage() {
 
                       <td className="py-4">
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
-                           <Eye size={18} className="text-gray-600 cursor-pointer hover:text-black" />
+                           <Eye 
+                            size={18} 
+                            className="text-gray-600 cursor-pointer hover:text-black" 
+                            onClick={() => {
+                              if (activeTab === "users") {
+                                handleOpenUserModal(item);
+                              } else {
+                                handleOpenAdminModal(item);
+                              }
+                            }}
+                          />
                         </div>
                       </td>
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={activeTab === "users" ? 7 : 5} className="py-12 text-gray-400 font-bold bg-white">
+                      <td colSpan={activeTab === "users" ? 7 : 5} className="py-12 text-gray-400 font-bold bg-white text-center">
                         No results found
                       </td>
                     </tr>
@@ -240,6 +309,30 @@ export default function AdminPermissionsPage() {
             </div>
           </div>
         </div>
+        
+        <UserDetailsModal
+          isOpen={isUserModalOpen}
+          onClose={() => setIsUserModalOpen(false)}
+          user={selectedUser}
+        />
+
+        <AdminDetailsModal
+          isOpen={isAdminModalOpen}
+          onClose={() => setIsAdminModalOpen(false)}
+          admin={selectedAdmin}
+          onEditClick={handleEditAdmin}
+        />
+
+        <AdminFormModal
+          isOpen={isAdminFormModalOpen}
+          mode={formMode}
+          initialData={adminToEdit}
+          onClose={() => setIsAdminFormModalOpen(false)}
+          onSubmit={(data) => {
+            setIsAdminFormModalOpen(false);
+          }}
+        />
+
       </main>
       <Footer />
       <style jsx global>{`
