@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
 import { Jost } from "next/font/google";
+import { userService } from "@/services/userService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "700", "900"] });
 
@@ -23,7 +24,22 @@ interface EditProfileModalProps {
 export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: EditProfileModalProps) => {
   const [formData, setFormData] = useState(initialData);
 
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(initialData);
+    }
+  }, [isOpen, initialData]);
+
   if (!isOpen) return null;
+
+  const handleConfirm = async () => {
+    try {
+      await userService.updateProfile(formData.fullname, formData.phone);
+      onConfirm(formData);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const inputClass = "w-full border border-gray-300 rounded-full px-5 py-1.5 text-base outline-none focus:border-blue-600 transition-all font-medium text-gray-800";
   const labelClass = "text-lg font-bold text-gray-900 min-w-[130px]";
@@ -110,7 +126,7 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
 
         <div className="flex justify-center mt-10">
           <button
-            onClick={() => onConfirm(formData)}
+            onClick={handleConfirm}
             className="px-14 py-2.5 bg-blue-600 text-white text-xl font-black rounded-full hover:bg-blue-700 transition-all active:scale-95 shadow-md"
           >
             Confirm

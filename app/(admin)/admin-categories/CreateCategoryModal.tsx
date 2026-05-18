@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
+import { categoryService } from "@/services/categoryService";
 
 interface CreateModalProps {
   isOpen: boolean;
@@ -11,20 +12,33 @@ export const CreateCategoryModal = ({ isOpen, onClose, onCreate }: CreateModalPr
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!name.trim()) {
       setError("Please enter a category name.");
       return;
     }
 
-    onCreate({ name: name.trim(), description: description.trim() });
-    setName("");
-    setDescription("");
-    setError("");
-    onClose();
+    try {
+      setIsSubmitting(true);
+      await categoryService.create({
+        name: name.trim(),
+        description: description.trim(),
+      });
+      
+      onCreate({ name: name.trim(), description: description.trim() });
+      setName("");
+      setDescription("");
+      setError("");
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to create category");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -79,9 +93,10 @@ export const CreateCategoryModal = ({ isOpen, onClose, onCreate }: CreateModalPr
           <div className="flex justify-center pt-2">
             <button
               onClick={handleCreate}
-              className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98]"
+              disabled={isSubmitting}
+              className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50"
             >
-              Create
+              {isSubmitting ? "Creating..." : "Create"}
             </button>
           </div>
         </div>

@@ -3,16 +3,19 @@
 import React from "react";
 
 interface EndedViewProps {
-  infoRows: { label: string; value: string; statusColor?: string }[];
+  infoRows: { label: string; value: any; statusColor?: string }[];
+  auctionDetail?: any;
 }
 
-export const EndedView = ({ infoRows }: EndedViewProps) => {
+export const EndedView = ({ infoRows, auctionDetail }: EndedViewProps) => {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
         <p className="text-[#CE2029] font-bold text-sm">Highest Bid:</p>
         <div className="w-full py-6 px-8 border border-gray-300 rounded-md flex justify-center items-center bg-gray-50/30">
-          <span className="text-3xl font-bold text-[#CE2029]">20,000,000 VND</span>
+          <span className="text-3xl font-bold text-[#CE2029]">
+            {auctionDetail?.currentPrice ? `${auctionDetail.currentPrice.toLocaleString()} VND` : "N/A"}
+          </span>
         </div>
       </div>
 
@@ -21,11 +24,10 @@ export const EndedView = ({ infoRows }: EndedViewProps) => {
         <span className="font-bold text-gray-900">Auction</span>
       </div>
 
-
       <div className="flex gap-4 items-start border-t border-gray-50 pt-4">
         <span className="text-[#CE2029] font-bold text-sm whitespace-nowrap">Description:</span>
         <p className="text-gray-900 font-normal text-sm leading-relaxed text-right flex-grow italic">
-          High-performance gaming laptop equipped with Intel Core i7 processor, NVIDIA RTX 4060 GPU, 16GB RAM, and 1TB SSD. Ideal for gaming, streaming, and high-end graphics work.
+          {auctionDetail?.description || ""}
         </p>
       </div>
 

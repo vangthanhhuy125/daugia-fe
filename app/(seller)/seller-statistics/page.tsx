@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -14,6 +14,7 @@ import { ManageProductsTable } from "./ManageProductsTable";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { CreateAuctionModal } from "@/components/CreateAuctionModal";
+import { userService } from "@/services/userService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -23,13 +24,35 @@ export default function SellerStatisticsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const [userData, setUserData] = useState({
-    fullname: "Nguyen Van Huy",
-    email: "nguyenvanhuy@gmail.com",
-    phone: "0123456789",
-    street: "No. 96, Street No. 12, Block 5",
-    province: "Ho Chi Minh City",
-    ward: "Thu Duc Ward"
+    fullname: "",
+    email: "",
+    phone: "",
+    street: "",
+    province: "",
+    ward: ""
   });
+
+  const [avatar, setAvatar] = useState("/avatar.jfif");
+
+  useEffect(() => {
+    userService.getProfile("")
+      .then(res => {
+        if (res.data) {
+          setUserData({
+            fullname: res.data.fullName || "",
+            email: res.data.email || "",
+            phone: res.data.phone || "",
+            street: "",
+            province: "",
+            ward: ""
+          });
+          if (res.data.avatarUrl) {
+            setAvatar(res.data.avatarUrl);
+          }
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   return (
     <div className={`${jost.className} min-h-screen bg-white`}>
@@ -43,7 +66,7 @@ export default function SellerStatisticsPage() {
         <ProfileHeader 
           name={userData.fullname}
           role="Seller" 
-          avatarUrl="/avatar.jfif"
+          avatarUrl={avatar}
           bannerUrl="/banner.jpg"
           onFeedbackClick={() => setIsFeedbackOpen(true)}
           onEditClick={() => setIsEditModalOpen(true)}

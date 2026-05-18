@@ -1,6 +1,9 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Users, Gavel, MousePointer2, Box } from "lucide-react";
+import { userService } from "@/services/userService";
+import { auctionService } from "@/services/auctionService";
+import { categoryService } from "@/services/categoryService";
 
 interface StatCardProps {
   label: string;
@@ -56,6 +59,36 @@ export const StatCard = ({
 };
 
 export const OverviewCards = () => {
+  const [stats, setStats] = useState({
+    users: 0,
+    auctions: 0,
+    bids: 0,
+    categories: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [usersRes, auctionsRes, categoriesRes] = await Promise.all([
+          userService.getAllUsers(0, 1),
+          auctionService.searchPublic({ page: 0, size: 1 }),
+          categoryService.getAll(0, 1)
+        ]);
+
+        setStats({
+          users: usersRes.data?.totalElements ?? 0,
+          auctions: auctionsRes.data?.totalElements ?? 0,
+          bids: 0, 
+          categories: categoriesRes.data?.totalElements ?? 0
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   return (
     <div className="space-y-4 ml-[-4px]">
       <h3 className="text-[#d32f2f] font-[900] text-lg tracking-tight">
@@ -64,25 +97,25 @@ export const OverviewCards = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Users"
-          value="40"
+          value={stats.users}
           icon={<Users size={30} strokeWidth={2.5} />}
           borderColor="border-blue-600"
         />
         <StatCard
           label="Valid Auction"
-          value="20"
+          value={stats.auctions}
           icon={<Gavel size={30} strokeWidth={2.5} />}
           borderColor="border-yellow-500"
         />
         <StatCard
           label="Total Bid"
-          value="125"
+          value={stats.bids}
           icon={<MousePointer2 size={30} strokeWidth={2.5} />}
           borderColor="border-green-500"
         />
         <StatCard
           label="Category"
-          value="9"
+          value={stats.categories}
           icon={<Box size={30} strokeWidth={2.5} />}
           borderColor="border-purple-600"
         />

@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Jost } from "next/font/google";
+import { authService } from "@/services/authService";
+import { RoleType } from "@/types/auth";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -14,9 +16,27 @@ const jost = Jost({
 export default function RegisterPage() {
   const router = useRouter();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleRegister = async (e: React.FormEvent, role: RoleType) => {
     e.preventDefault();
-    router.push("/verify"); 
+    try {
+      await authService.register({
+        fullName,
+        phone,
+        email,
+        password,
+        confirmPassword,
+        role,
+      });
+      router.push(`/verify?email=${encodeURIComponent(email)}`);
+    } catch (err: any) {
+      alert(err.message || "Registration failed");
+    }
   };
 
   return (
@@ -55,14 +75,16 @@ export default function RegisterPage() {
         <div className="max-w-2xl w-full mx-auto lg:mx-0">
           <h1 className="text-5xl font-[900] text-black mb-4 mt-8">Register</h1>
 
-          <form className="space-y-5" onSubmit={handleRegister}>
+          <form className="space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 ml-1">
                 Full name <span className="text-red-500">(*)</span>:
               </label>
               <input
                 type="text"
-                //required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
                 className="w-full h-14 bg-[#e0e0e0] rounded-full px-6 outline-none focus:ring-2 ring-blue-600 transition"
               />
             </div>
@@ -74,7 +96,9 @@ export default function RegisterPage() {
                 </label>
                 <input
                   type="text"
-                  //required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
                   className="w-full h-14 bg-[#e0e0e0] rounded-full px-6 outline-none focus:ring-2 ring-blue-600 transition"
                 />
               </div>
@@ -84,7 +108,9 @@ export default function RegisterPage() {
                 </label>
                 <input
                   type="email"
-                  //required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                   className="w-full h-14 bg-[#e0e0e0] rounded-full px-6 outline-none focus:ring-2 ring-blue-600 transition"
                 />
               </div>
@@ -97,7 +123,9 @@ export default function RegisterPage() {
                 </label>
                 <input
                   type="password"
-                  //required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                   className="w-full h-14 bg-[#e0e0e0] rounded-full px-6 outline-none focus:ring-2 ring-blue-600 transition"
                 />
               </div>
@@ -107,7 +135,9 @@ export default function RegisterPage() {
                 </label>
                 <input
                   type="password"
-                  //required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
                   className="w-full h-14 bg-[#e0e0e0] rounded-full px-6 outline-none focus:ring-2 ring-blue-600 transition"
                 />
               </div>
@@ -115,14 +145,16 @@ export default function RegisterPage() {
 
             <div className="flex flex-col md:flex-row gap-4 pt-6 justify-center lg:justify-start">
               <button
-                type="submit"
+                type="button"
+                onClick={(e) => handleRegister(e, "SELLER")}
                 className="px-8 h-14 bg-[#0a8444] text-white font-[900] text-lg rounded-full shadow-lg hover:bg-green-700 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 Register as a Seller
               </button>
               
               <button
-                type="submit"
+                type="button"
+                onClick={(e) => handleRegister(e, "BIDDER")}
                 className="px-8 h-14 bg-blue-600 text-white font-[900] text-lg rounded-full shadow-lg hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 Register as a Bidder

@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronDown, RotateCcw, Search } from "lucide-react";
+import { auctionService } from "@/services/auctionService";
+import { biddingService } from "@/services/biddingService";
 
 export const ManageProductsTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -9,12 +11,44 @@ export const ManageProductsTable = () => {
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [sortField, setSortField] = useState("revenue");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [products, setProducts] = useState<any[]>([]);
 
-  const initialProducts = [
-    { no: 1, name: "Dell XPS 13 Laptop", category: "Electronics", status: "Upcoming", date: "30/3/2026", bids: 0, type: "-", revenue: 0 },
-    { no: 2, name: "iPhone 14 Pro", category: "Electronics", status: "Live", date: "11/3/2026", bids: 8, type: "Auction", revenue: 30000000 },
-    { no: 3, name: "Sony Alpha Camera", category: "Electronics", status: "Ended", date: "10/3/2026", bids: 10, type: "Buy now", revenue: 33000000 },
-  ];
+  useEffect(() => {
+    auctionService.getMyAuctions(0, 999)
+      .then(async (res) => {
+        const auctionList = res.data?.content || [];
+
+        const enrichedPromises = auctionList.map(async (item: any) => {
+          let bidsCount = 0;
+          try {
+            const bidRes = await biddingService.getBidHistory(item.id, 0, 1);
+            bidsCount = bidRes.data?.totalElements || 0;
+          } catch (err) {
+            bidsCount = 0;
+          }
+
+          const isEnded = item.status === "COMPLETED";
+          const revenue = isEnded ? (item.buyNowPrice || item.startingPrice || 0) : 0;
+          const type = item.buyNowPrice ? "Buy now" : "Auction";
+
+          return {
+            id: item.id,
+            name: item.productName || "No Name",
+            category: item.categoryName || "Uncategorized",
+            status: item.status || "UNKNOWN",
+            date: item.biddingEndTime ? new Date(item.biddingEndTime).toLocaleDateString('en-GB') : "-",
+            bids: bidsCount,
+            type: bidsCount > 0 ? "Auction" : type,
+            revenue: revenue,
+            rawDate: item.biddingEndTime ? new Date(item.biddingEndTime).getTime() : 0
+          };
+        });
+
+        const enrichedData = await Promise.all(enrichedPromises);
+        setProducts(enrichedData);
+      })
+      .catch(console.error);
+  }, []);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -33,7 +67,7 @@ export const ManageProductsTable = () => {
     setSortOrder("desc");
   };
 
-  const filteredProducts = initialProducts.filter((p) => {
+  const filteredProducts = products.filter((p) => {
     const matchSearch = searchTerm.length >= 2 ? p.name.toLowerCase().includes(searchTerm.toLowerCase()) : true;
     const matchCat = categoryFilter === "All Category" || p.category === categoryFilter;
     const matchStatus = statusFilter === "All Status" || p.status === statusFilter;
@@ -41,8 +75,12 @@ export const ManageProductsTable = () => {
   });
 
   const sortedProducts = [...filteredProducts].sort((a: any, b: any) => {
-    const valA = a[sortField];
-    const valB = b[sortField];
+    let valA = a[sortField];
+    let valB = b[sortField];
+    if (sortField === "date") {
+      valA = a.rawDate;
+      valB = b.rawDate;
+    }
     return sortOrder === "asc" ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
   });
 
@@ -75,7 +113,9 @@ export const ManageProductsTable = () => {
           className="h-12 border border-gray-200 rounded-full px-6 text-[15px] font-medium text-gray-700 outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJtNiA5IDYgNiA2LTYiLz48L3N2Zz4=')] bg-[length:20px] bg-[right_15px_center] bg-no-repeat pr-12 min-w-[160px]"
         >
           <option>All Category</option>
-          <option>Electronics</option>
+          {Array.from(new Set(products.map(p => p.category))).map(cat => (
+            <option key={cat}>{cat}</option>
+          ))}
         </select>
 
         <select 
@@ -87,6 +127,7 @@ export const ManageProductsTable = () => {
           <option>Upcoming</option>
           <option>Live</option>
           <option>Ended</option>
+          <option>COMPLETED</option>
         </select>
 
         <RotateCcw 
@@ -124,14 +165,14 @@ export const ManageProductsTable = () => {
             </thead>
             <tbody>
             {sortedProducts.length > 0 ? (
-                sortedProducts.map((item) => {
+                sortedProducts.map((item, idx) => {
 
                 return (
                     <tr 
-                    key={item.no} 
+                    key={item.id || idx} 
                     className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 font-normal`}
                     >
-                    <td className="py-6 border-r border-gray-100 font-bold">{item.no}</td>
+                    <td className="py-6 border-r border-gray-100 font-bold">{idx + 1}</td>
                     <td className="py-6 border-r border-gray-100">{item.name}</td>
                     <td className="py-6 border-r border-gray-100">{item.category}</td>
                     <td className="py-6 border-r border-gray-100">{item.status}</td>

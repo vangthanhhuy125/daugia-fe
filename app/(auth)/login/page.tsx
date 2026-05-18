@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Jost } from "next/font/google";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { authService } from "@/services/authService";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -19,18 +20,32 @@ export default function LoginPage() {
   const [identity, setIdentity] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (identity.includes("admin")) {
-      login({ role: "admin", token: "admin-token" });
-      router.push("/admin-home");
-    } else if (identity.includes("seller")) {
-      login({ role: "seller", token: "seller-token" });
-      router.push("/seller-profile");
-    } else {
-      login({ role: "bidder", token: "bidder-token" });
-      router.push("/bidder-home");
+    try {
+      const response = await authService.authenticate({
+        identifier: identity,
+        password: password,
+      });
+
+      const { access_token, refresh_token, role } = response.data;
+
+      localStorage.setItem("accessToken", access_token);
+      localStorage.setItem("refreshToken", refresh_token);
+
+      const normalizedRole = role.toLowerCase();
+      login({ role: normalizedRole, token: access_token });
+
+      if (normalizedRole === "admin") {
+        router.push("/admin-home");
+      } else if (normalizedRole === "seller") {
+        router.push("/seller-profile");
+      } else {
+        router.push("/bidder-home");
+      }
+    } catch (err: any) {
+      alert(err.message || "Invalid credentials");
     }
   };
 
@@ -79,7 +94,7 @@ export default function LoginPage() {
                 type="text"
                 value={identity}
                 onChange={(e) => setIdentity(e.target.value)}
-                placeholder="Nhập 'admin' hoặc 'seller' để test role"
+                placeholder="Enter your email or phone number"
                 className="w-full h-14 bg-[#e0e0e0] rounded-full px-6 outline-none focus:ring-2 ring-blue-600 transition"
                 required
               />
@@ -93,6 +108,7 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
                 className="w-full h-14 bg-[#e0e0e0] rounded-full px-6 outline-none focus:ring-2 ring-blue-600 transition"
                 required
               />

@@ -1,14 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
+import { userService } from "@/services/userService";
 
 export const Sidebar = () => {
   const pathname = usePathname();
   const { role } = useAuth(); 
   const currentRole = role || "bidder"; 
+  const [profileRole, setProfileRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    userService.getProfile("")
+      .then(res => {
+        if (res.data?.role?.name) {
+          setProfileRole(res.data.role.name.toLowerCase());
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const resolvedRole = profileRole || currentRole;
 
   const bidderMenu = [
     { name: "Profile", href: "/bidder-profile" },
@@ -32,7 +46,7 @@ export const Sidebar = () => {
   ];
 
   const getMenuItems = () => {
-    switch (currentRole) {
+    switch (resolvedRole) {
       case "admin":
         return adminMenu;
       case "seller":

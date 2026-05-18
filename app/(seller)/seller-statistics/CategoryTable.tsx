@@ -1,18 +1,43 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, RotateCcw } from "lucide-react";
+import { auctionService } from "@/services/auctionService";
 
 export const CategoryTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoriesData, setCategoriesData] = useState<any[]>([]);
 
-  const initialData = [
-    { no: 1, category: "Electronics", sold: 20, revenue: 400000000 },
-    { no: 2, category: "Fashion", sold: 10, revenue: 150000000 },
-    { no: 3, category: "Collectibles", sold: 8, revenue: 70000000 },
-  ];
+  useEffect(() => {
+    auctionService.getMyAuctions(0, 999)
+      .then(res => {
+        const auctionList = res.data?.content || [];
 
-  const sortedByRevenue = [...initialData].sort((a, b) => b.revenue - a.revenue);
+        const aggregated = auctionList.reduce((acc: Record<string, { category: string; sold: number; revenue: number }>, item: any) => {
+          const catName = item.categoryName || "Uncategorized";
+          if (!acc[catName]) {
+            acc[catName] = { category: catName, sold: 0, revenue: 0 };
+          }
+          if (item.status === "COMPLETED") {
+            acc[catName].sold += 1;
+            acc[catName].revenue += (item.buyNowPrice || item.startingPrice || 0);
+          }
+          return acc;
+        }, {});
+
+        const sorted = Object.values(aggregated)
+          .sort((a: any, b: any) => b.revenue - a.revenue)
+          .map((item: any, index: number) => ({
+            no: index + 1,
+            ...item
+          }));
+
+        setCategoriesData(sorted);
+      })
+      .catch(console.error);
+  }, []);
+
+  const sortedByRevenue = [...categoriesData].sort((a, b) => b.revenue - a.revenue);
 
   const filteredData = sortedByRevenue.filter((item) => {
     if (searchTerm.length < 2) return true;

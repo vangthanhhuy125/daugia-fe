@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
 import Image from "next/image";
+import { paymentService } from "@/services/paymentService";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface PaymentModalProps {
 
 const PaymentModal = ({ isOpen, onClose, data }: PaymentModalProps) => {
   const [paymentMethod, setPaymentMethod] = useState<"card" | "wallet" | "bank">("card");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   if (!isOpen || !data) return null;
 
@@ -20,17 +22,29 @@ const PaymentModal = ({ isOpen, onClose, data }: PaymentModalProps) => {
     return sum + (isNaN(numericAmount) ? 0 : numericAmount);
   }, 0);
 
+  const handleConfirm = async () => {
+    if (!data?.items?.length) return;
+    try {
+      setIsProcessing(true);
+      const res = await paymentService.createPayment(data.items[0].id);
+      if (res.data?.paymentUrl) {
+        window.location.href = res.data.paymentUrl;
+      }
+    } catch (error) {
+      console.error(error);
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div 
         className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-[32px] p-8 shadow-2xl animate-in fade-in zoom-in duration-300
-          /* Custom Scrollbar cho Webkit (Chrome, Safari, Edge) */
           [&::-webkit-scrollbar]:w-2
           [&::-webkit-scrollbar-track]:bg-transparent
           [&::-webkit-scrollbar-thumb]:bg-gray-200
           [&::-webkit-scrollbar-thumb]:rounded-full
           hover:[&::-webkit-scrollbar-thumb]:bg-gray-300
-          /* Cho Firefox */
           [scrollbar-width:thin]
           [scrollbar-color:theme(colors.gray.200)_transparent]"
       >
@@ -44,7 +58,6 @@ const PaymentModal = ({ isOpen, onClose, data }: PaymentModalProps) => {
           </button>
         </div>
 
-        {/* --- GIỮ NGUYÊN PHẦN NỘI DUNG BÊN DƯỚI --- */}
         <div className="border border-gray-100 rounded-2xl p-4 mb-4 space-y-4">
           {data.items.map((item: any) => (
             <div key={item.id} className="flex items-center justify-between">
@@ -68,7 +81,6 @@ const PaymentModal = ({ isOpen, onClose, data }: PaymentModalProps) => {
         <p className="text-xs font-black text-gray-900 mb-4 tracking-tight">Please select a payment method</p>
 
         <div className="space-y-6">
-          {/* Card Option */}
           <div className="space-y-3">
             <label className="flex items-center gap-2 cursor-pointer group w-fit">
               <input 
@@ -117,7 +129,6 @@ const PaymentModal = ({ isOpen, onClose, data }: PaymentModalProps) => {
             )}
           </div>
 
-          {/* Wallet Option */}
           <div className="space-y-3">
             <label className="flex items-center gap-2 cursor-pointer w-fit">
               <input 
@@ -144,7 +155,6 @@ const PaymentModal = ({ isOpen, onClose, data }: PaymentModalProps) => {
             )}
           </div>
 
-          {/* Bank Option */}
           <div className="space-y-3">
             <label className="flex items-center gap-2 cursor-pointer w-fit">
               <input 
@@ -175,8 +185,12 @@ const PaymentModal = ({ isOpen, onClose, data }: PaymentModalProps) => {
         </div>
 
         <div className="mt-10 pb-2">
-          <button className="w-full h-12 bg-blue-600 text-white rounded-full font-black text-sm hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100 tracking-widest">
-            Confirm
+          <button 
+            onClick={handleConfirm}
+            disabled={isProcessing}
+            className="w-full h-12 bg-blue-600 text-white rounded-full font-black text-sm hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100 tracking-widest disabled:opacity-50"
+          >
+            {isProcessing ? "Processing..." : "Confirm"}
           </button>
         </div>
       </div>

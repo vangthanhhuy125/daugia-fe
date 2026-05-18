@@ -1,30 +1,48 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuctionFilters } from "./AuctionFilters";
 import { AuctionListCard } from "./AuctionListCard";
 import { Jost } from 'next/font/google';
+import { auctionService } from "@/services/auctionService";
 
 const jost = Jost({ subsets: ['latin'], weight: ['400', '700', '900'] });
 
-const auctionsData = Array(30).fill({
-  image: "/laptop-image.png",
-  title: "MSI Raider GE78 Gaming Laptop",
-  status: "Upcoming",
-  openDate: "2026-03-15",
-  category: "Electronics",
-}).map((item, i) => {
-  if (i >= 5 && i < 15) return { ...item, id: i, status: "Live", openDate: "2026-04-08", endDate: "2026-04-12" };
-  if (i >= 15) return { ...item, id: i, status: "Ended", openDate: "2026-04-01", endDate: "2026-04-05", category: "Property" };
-  return { ...item, id: i };
-});
-
-export default function AuctionListPage() {
+function AuctionListContent() {
   const searchParams = useSearchParams();
   const statusFromUrl = searchParams.get("status");
+
+  const [auctionsData, setAuctionsData] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      try {
+        const res = await auctionService.searchPublic({ size: 100 });
+        const mapped = res.data.content.map((item: any) => {
+          let s = "Upcoming";
+          if (item.status === "ACTIVE") s = "Live";
+          if (item.status === "ENDED") s = "Ended";
+
+          return {
+            id: item.id.toString(),
+            image: item.thumbnailUrl || "/laptop-image.png",
+            title: item.productName,
+            status: s,
+            openDate: item.biddingStartTime ? new Date(item.biddingStartTime).toISOString() : new Date().toISOString(),
+            endDate: item.biddingEndTime ? new Date(item.biddingEndTime).toISOString() : undefined,
+            category: item.categoryName || "Electronics",
+          };
+        });
+        setAuctionsData(mapped);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchAuctions();
+  }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
@@ -57,7 +75,7 @@ export default function AuctionListPage() {
 
       return matchesSearch && matchesCategory && matchesStatus && matchesStart && matchesEnd;
     });
-  }, [filters]);
+  }, [filters, auctionsData]);
 
   const totalPages = Math.ceil(filteredAuctions.length / ITEMS_PER_PAGE);
   const currentAuctions = filteredAuctions.slice(
@@ -147,5 +165,13 @@ export default function AuctionListPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function AuctionListPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#fdfdfd] text-xl font-medium">Loading...</div>}>
+      <AuctionListContent />
+    </Suspense>
   );
 }

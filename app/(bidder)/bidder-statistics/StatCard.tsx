@@ -50,7 +50,7 @@ export const StatCard = ({
           {label}
         </span>
         <span className={`text-[22px] font-black leading-tight ${textVal}`}>
-          {value}
+          {typeof value === "number" ? value.toLocaleString() : value}
         </span>
         {unit && (
           <span className={`text-[10px] font-extrabold ${textVal}`}>

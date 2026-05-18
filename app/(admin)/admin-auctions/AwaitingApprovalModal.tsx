@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import Image from "next/image";
 import { Jost } from "next/font/google";
+import { auctionService } from "@/services/auctionService";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -24,14 +25,32 @@ const AwaitingApprovalModal = ({
   const [showConfirm, setShowConfirm] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [reason, setReason] = useState("");
+  const [auctionDetail, setAuctionDetail] = useState<any>(null);
+
+  useEffect(() => {
+    if (isOpen && data?.id) {
+      auctionService.getByIdAdmin(data.id)
+        .then(res => setAuctionDetail(res.data))
+        .catch(err => console.error(err));
+    } else {
+      setAuctionDetail(null);
+    }
+  }, [isOpen, data]);
 
   const handleApproveClick = () => {
     setShowConfirm(true);
   };
 
-  const handleConfirmApprove = () => {
-    console.log("Auction approved!");
-    setShowConfirm(false);
+  const handleConfirmApprove = async () => {
+    if (!data?.id) return;
+    try {
+      await auctionService.reviewAuction(data.id, { approved: true });
+      setShowConfirm(false);
+      onClose();
+      window.location.reload();
+    } catch (error: any) {
+      alert(error.message || "Failed to approve auction");
+    }
   };
 
   const handleRejectClick = () => {
@@ -42,28 +61,31 @@ const AwaitingApprovalModal = ({
     setShowRejectConfirm(true);
   };
 
-  const handleConfirmReject = () => {
-    console.log("Auction rejected with reason:", reason);
-    setShowRejectConfirm(false);
+  const handleConfirmReject = async () => {
+    if (!data?.id) return;
+    try {
+      await auctionService.reviewAuction(data.id, { approved: false, rejectionReason: reason });
+      setShowRejectConfirm(false);
+      onClose();
+      window.location.reload();
+    } catch (error: any) {
+      alert(error.message || "Failed to reject auction");
+    }
   };
 
   if (!isOpen || !data) return null;
 
-  const detailRows = [
-    { label: "Starting price:", value: "19,000,000 VND" },
-    {
-      label: "Property code:",
-      value: "7f3c2c5e-4f92-4d6b-8f6a-5c2b9a1f4a11",
-    },
-    { label: "Bid increment:", value: "200,000 VND" },
-    { label: "Buy now price:", value: "27,000,000 VND" },
-    { label: "Status:", value: "Approval", isStatus: true },
-    { label: "Category:", value: "Electronics" },
-    { label: "Registration time:", value: "5/3/2026 09:00:00" },
-    { label: "Approval time:", value: "7/3/2026 09:00:00" },
-    { label: "Bidding start time:", value: "10/3/2026 09:00:00" },
-    { label: "Bidding end time:", value: "15/3/2026 09:00:00" },
-  ];
+  const detailRows = auctionDetail ? [
+    { label: "Starting price:", value: `${auctionDetail.startingPrice?.toLocaleString()} VND` },
+    { label: "Property code:", value: auctionDetail.id?.toString() },
+    { label: "Bid increment:", value: `${auctionDetail.bidIncrement?.toLocaleString()} VND` },
+    { label: "Buy now price:", value: auctionDetail.buyNowPrice ? `${auctionDetail.buyNowPrice.toLocaleString()} VND` : "N/A" },
+    { label: "Status:", value: auctionDetail.status, isStatus: true },
+    { label: "Category:", value: auctionDetail.categoryName },
+    { label: "Registration time:", value: auctionDetail.createdAt ? new Date(auctionDetail.createdAt).toLocaleString('en-GB') : "N/A" },
+    { label: "Bidding start time:", value: auctionDetail.biddingStartTime ? new Date(auctionDetail.biddingStartTime).toLocaleString('en-GB') : "N/A" },
+    { label: "Bidding end time:", value: auctionDetail.biddingEndTime ? new Date(auctionDetail.biddingEndTime).toLocaleString('en-GB') : "N/A" },
+  ] : [];
 
   return (
     <div
@@ -87,7 +109,7 @@ const AwaitingApprovalModal = ({
             <div className="lg:col-span-5 flex flex-col gap-6">
               <div className="relative w-full aspect-[4/3] bg-gray-50 rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
                 <Image
-                  src={data.imageUrl || "/banner.jpg"}
+                  src={auctionDetail?.images?.[0]?.imageUrl || data.imageUrl || "/banner.jpg"}
                   alt="Product"
                   fill
                   className="object-cover"
@@ -97,7 +119,7 @@ const AwaitingApprovalModal = ({
               <div className="flex gap-4 overflow-x-auto pb-2">
                 <div className="relative w-32 h-24 shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
                   <Image
-                    src={data.imageUrl || "/banner.jpg"}
+                    src={auctionDetail?.images?.[1]?.imageUrl || data.imageUrl || "/banner.jpg"}
                     alt="Thumb 1"
                     fill
                     className="object-cover"
@@ -105,7 +127,7 @@ const AwaitingApprovalModal = ({
                 </div>
                 <div className="relative w-32 h-24 shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
                   <Image
-                    src={data.imageUrl || "/nen.jpg"}
+                    src={auctionDetail?.images?.[2]?.imageUrl || data.imageUrl || "/nen.jpg"}
                     alt="Thumb 2"
                     fill
                     className="object-cover"
@@ -120,19 +142,19 @@ const AwaitingApprovalModal = ({
                 <div className="text-sm font-medium space-y-2">
                     <div className="grid grid-cols-[100px_1fr] gap-y-2 text-sm font-medium">
                         <span className="text-gray-900 font-black">Seller:</span>
-                        <span className="text-gray-700">Nguyen Van An</span>
+                        <span className="text-gray-700">{auctionDetail?.sellerName || "N/A"}</span>
                     </div>
 
                     <div className="grid grid-cols-[100px_1fr]">
                         <span className="text-gray-900 font-black">Email:</span>
                         <span className="text-gray-700">
-                            nguyenvanan123@gmail.com
+                            {auctionDetail?.sellerEmail || "N/A"}
                         </span>
                     </div>
 
                     <div className="grid grid-cols-[100px_1fr]">
                         <span className="text-gray-900 font-black">Sold:</span>
-                        <span className="text-gray-700">120</span>
+                        <span className="text-gray-700">0</span>
                     </div>
                 </div>
               </div>
@@ -140,7 +162,7 @@ const AwaitingApprovalModal = ({
 
             <div className="lg:col-span-7 flex flex-col gap-4">
               <h3 className="text-2xl font-[900] text-gray-900">
-                {data.name || "MSI Raider GE78 Gaming Laptop"}
+                {auctionDetail?.productName || data.name}
               </h3>
 
               <div className="flex flex-col gap-3 mt-2">
@@ -149,9 +171,7 @@ const AwaitingApprovalModal = ({
                     Description:
                   </span>
                   <span className="text-right font-medium text-gray-800 text-[14px] leading-relaxed">
-                    High-performance gaming laptop equipped with Intel Core i7
-                    processor, NVIDIA RTX 4060 GPU, 16GB RAM, and 1TB SSD. Ideal
-                    for gaming, streaming, and high-end graphics work.
+                    {auctionDetail?.description || ""}
                   </span>
                 </div>
 

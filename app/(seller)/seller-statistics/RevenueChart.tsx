@@ -1,24 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-
-const dataBar = [
-  { name: '2/3', revenue: 400000 }, 
-  { name: '3/3', revenue: 300000 }, 
-  { name: '4/3', revenue: 5000000 },
-  { name: '5/3', revenue: 6000000 }, 
-  { name: '6/3', revenue: 4000000 }, 
-  { name: '7/3', revenue: 9000000 }, 
-  { name: '8/3', revenue: 2000000 },
-];
-
-const dataPie = [
-  { name: 'Electronics', value: 400, color: '#FF4D4D' },
-  { name: 'Fashion', value: 300, color: '#7ED321' },
-  { name: 'Collectibles', value: 300, color: '#4A90E2' },
-  { name: 'Others', value: 200, color: '#F8E71C' },
-];
+import { auctionService } from "@/services/auctionService";
 
 const formatVND = (value: number) => {
   return `${value.toLocaleString().replace(/,/g, '.')} VND`;
@@ -38,6 +22,52 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export const RevenueChart = () => {
   const [timeRange, setTimeRange] = useState("Last 7 Days");
+  const [dataBar, setDataBar] = useState<any[]>([]);
+  const [dataPie, setDataPie] = useState<any[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    auctionService.getMyAuctions(0, 999)
+      .then(res => {
+        const auctionList = res.data?.content || [];
+        const completedAuctions = auctionList.filter((item: any) => item.status === "COMPLETED");
+
+        const revenueByDate: Record<string, number> = {};
+        const revenueByCategory: Record<string, number> = {};
+
+        completedAuctions.forEach((item: any) => {
+          const amount = item.buyNowPrice || item.startingPrice || 0;
+          
+          if (item.biddingEndTime) {
+            const dateStr = new Date(item.biddingEndTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'numeric' });
+            revenueByDate[dateStr] = (revenueByDate[dateStr] || 0) + amount;
+          }
+
+          const catName = item.categoryName || "Others";
+          revenueByCategory[catName] = (revenueByCategory[catName] || 0) + amount;
+        });
+
+        const formattedBarData = Object.keys(revenueByDate).map(date => ({
+          name: date,
+          revenue: revenueByDate[date]
+        }));
+        setDataBar(formattedBarData);
+
+        const colors = ['#FF4D4D', '#7ED321', '#4A90E2', '#F8E71C', '#8B5CF6', '#EC4899'];
+        const formattedPieData = Object.keys(revenueByCategory).map((cat, idx) => ({
+          name: cat,
+          value: revenueByCategory[cat],
+          color: colors[idx % colors.length]
+        }));
+        setDataPie(formattedPieData);
+      })
+      .catch(console.error);
+  }, [timeRange]);
+
+  if (!isMounted) {
+    return <div className="h-[350px] w-full bg-gray-50 animate-pulse rounded-2xl" />;
+  }
 
   return (
     <div className="flex flex-col gap-8">

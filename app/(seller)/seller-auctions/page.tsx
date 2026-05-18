@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Jost } from "next/font/google";
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Search, RotateCcw } from "lucide-react";
 import DatePicker from "react-datepicker";
@@ -17,6 +17,7 @@ import { CreateAuctionModal } from "@/components/CreateAuctionModal";
 import { UpcomingModal } from "./UpcomingModal";
 import { LiveModal } from "./LiveModal";
 import { EndedModal } from "./EndedModal";
+import { auctionService } from "@/services/auctionService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -36,13 +37,41 @@ export default function SellerAuctionsPage() {
 
   const tabs = ["Upcoming", "Live", "Ended"];
   
-  const allAuctions = [
-    { id: "1", title: "Laptop Gaming MSI", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Starting Bid", image: "/laptop-image.png", status: "Upcoming" },
-    { id: "2", title: "Laptop Gaming Dell", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Starting Bid", image: "/laptop-image.png", status: "Upcoming" },
-    { id: "3", title: "Laptop Gaming ASUS", category: "Electronics", time: "10/3/2026 09:00:00", price: "15,500,000 VND", priceLabel: "Current Bid", image: "/laptop-image.png", status: "Live" },
-    { id: "4", title: "Laptop Gaming HP", category: "Electronics", time: "10/3/2026 09:00:00", price: "20,000,000 VND", priceLabel: "Winning Bid", image: "/laptop-image.png", status: "Ended"},
-    { id: "5", title: "Laptop Gaming Razer", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Final Bid", image: "/laptop-image.png", status: "Ended" },
-  ];
+  const [allAuctions, setAllAuctions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      try {
+        const res = await auctionService.getMyAuctions(0, 100);
+        const mapped = res.data.content.map((item: any) => {
+          let s = "Upcoming";
+          if (item.status === "ACTIVE") s = "Live";
+          if (item.status === "ENDED" || item.status === "REJECTED") s = "Ended";
+
+          let label = "Starting Bid";
+          if (s === "Live") label = "Current Bid";
+          if (s === "Ended") label = "Final Bid";
+
+          const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : "";
+
+          return {
+            id: item.id.toString(),
+            title: item.productName,
+            category: item.categoryName || "Electronics",
+            time: dateStr ? `${dateStr} 00:00:00` : "10/3/2026 09:00:00",
+            price: `${item.startingPrice?.toLocaleString()} VND`,
+            priceLabel: label,
+            image: item.thumbnailUrl || "/laptop-image.png",
+            status: s
+          };
+        });
+        setAllAuctions(mapped);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchAuctions();
+  }, []);
 
   const handleReset = () => {
     setSearchTerm("");
@@ -211,7 +240,7 @@ export default function SellerAuctionsPage() {
                 </div>
 
                 <div className="flex items-center gap-4 text-gray-400 font-[900] text-xs uppercase tracking-widest">
-                  <span>1 - 15</span>
+                  <span>{filteredAuctions.length > 0 ? `1 - ${filteredAuctions.length}` : "0"}</span>
                   <div className="flex gap-2">
                     <ChevronLeft size={18} className="cursor-pointer hover:text-gray-900 transition" />
                     <ChevronRight size={18} className="cursor-pointer hover:text-gray-900 transition" />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -9,46 +9,45 @@ import { Pencil, Trash2, PlusCircle, Search } from "lucide-react";
 import { CreateCategoryModal } from "./CreateCategoryModal";
 import { EditCategoryModal } from "./EditCategoryModal";
 import { DeleteCategoryModal } from "./DeleteCategoryModal";
+import { categoryService } from "@/services/categoryService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
 interface Category {
-  id: number;
+  id: string;
   name: string;
   description: string;
   totalProducts: number;
 }
 
-const initialCategories: Category[] = [
-  {
-    id: 1,
-    name: "Electronics",
-    description: "Devices and electronic gadgets such as laptops, smartphones, cameras, and accessories.",
-    totalProducts: 30,
-  },
-  {
-    id: 2,
-    name: "Fashion",
-    description: "Clothing, footwear, and fashion accessories including bags, watches, and jewelry.",
-    totalProducts: 30,
-  },
-  {
-    id: 3,
-    name: "Collectibles",
-    description: "Rare and valuable items such as antiques, vintage goods, and collectible memorabilia.",
-    totalProducts: 30,
-  },
-];
-
 export default function AdminCategoriesPage() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await categoryService.getAll(0, 100);
+      const mapped = res.data.content.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description || "",
+        totalProducts: 0,
+      }));
+      setCategories(mapped);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   const filteredCategories = searchTerm.length >= 2 ? categories.filter(cat => cat.name.toLowerCase().includes(searchTerm.toLowerCase()) || cat.description.toLowerCase().includes(searchTerm.toLowerCase())) : categories;
 
@@ -116,7 +115,7 @@ export default function AdminCategoriesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedCategories.map((cat) => (
+                    {sortedCategories.map((cat, index) => (
                       <tr
                         key={cat.id}
                         className={`group border-b border-gray-200 ${hoveredRow === cat.id ? 'bg-blue-100' : ''} transition-colors duration-200`}
@@ -124,7 +123,7 @@ export default function AdminCategoriesPage() {
                         onMouseLeave={() => setHoveredRow(null)}
                       >
                         <td className="py-6 px-4 text-center font-bold text-gray-800">
-                          {cat.id}
+                          {index + 1}
                         </td>
                         <td className="py-6 px-4 text-left font-bold text-gray-800">
                           {cat.name}
@@ -179,37 +178,19 @@ export default function AdminCategoriesPage() {
       <CreateCategoryModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onCreate={({ name, description }) => {
-          setCategories((prev) => [
-            ...prev,
-            {
-              id: prev.length ? Math.max(...prev.map((cat) => cat.id)) + 1 : 1,
-              name,
-              description,
-              totalProducts: 0,
-            },
-          ]);
-        }}
+        onCreate={() => fetchCategories()}
       />
       <EditCategoryModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         category={selectedCategory}
-        onUpdate={(updated) => {
-          setCategories((prev) => prev.map((cat) => cat.id === updated.id ? { ...cat, name: updated.name, description: updated.description } : cat));
-          setSelectedCategory((prev) => prev && prev.id === updated.id ? { ...prev, name: updated.name, description: updated.description } : prev);
-        }}
+        onUpdate={() => fetchCategories()}
       />
       <DeleteCategoryModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         category={selectedCategory}
-        onDelete={() => {
-          if (!selectedCategory) return;
-          setCategories((prev) => prev.filter((cat) => cat.id !== selectedCategory.id));
-          setSelectedCategory(null);
-          setIsDeleteModalOpen(false);
-        }}
+        onDelete={() => fetchCategories()}
       />
     </div>
   );

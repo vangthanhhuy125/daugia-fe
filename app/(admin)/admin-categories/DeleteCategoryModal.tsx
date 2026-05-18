@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { categoryService } from "@/services/categoryService";
 
 interface DeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  category: { name: string; totalProducts: number } | null;
+  category: { id: string; name: string; totalProducts: number } | null;
   onDelete: () => void;
 }
 
@@ -18,6 +19,8 @@ export const DeleteCategoryModal = ({
   onDelete,
 }: DeleteModalProps) => {
   const [mounted, setMounted] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -26,6 +29,20 @@ export const DeleteCategoryModal = ({
   if (!mounted || !isOpen || !category) return null;
 
   const canDelete = category.totalProducts === 0;
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      setError("");
+      await categoryService.delete(category.id);
+      onDelete();
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to delete category");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return createPortal(
     <div
@@ -62,24 +79,25 @@ export const DeleteCategoryModal = ({
                 This action cannot be undone.
               </p>
 
+              {error && <p className="text-sm text-red-600 mb-4 font-medium">{error}</p>}
+
               <div className="flex flex-row justify-center gap-4 w-full">
                 <button
                   onClick={onClose}
-                  className="flex-1 py-3 rounded-full font-bold shadow-md transition-opacity hover:opacity-80 text-base"
+                  disabled={isDeleting}
+                  className="flex-1 py-3 rounded-full font-bold shadow-md transition-opacity hover:opacity-80 text-base disabled:opacity-50"
                   style={{ backgroundColor: '#ff6d00', color: '#ffffff' }}
                 >
                   Cancel
                 </button>
 
                 <button
-                  onClick={() => {
-                    onDelete();
-                    onClose();
-                  }}
-                  className="flex-1 py-3 rounded-full font-bold shadow-md transition-opacity hover:opacity-80 text-base"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex-1 py-3 rounded-full font-bold shadow-md transition-opacity hover:opacity-80 text-base disabled:opacity-50"
                   style={{ backgroundColor: '#cc2229', color: '#ffffff' }}
                 >
-                  Delete
+                  {isDeleting ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </>

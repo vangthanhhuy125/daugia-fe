@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -9,30 +9,47 @@ import { Sidebar } from "@/components/Sidebar";
 import { StatCard } from "./StatCard";
 import { Gavel, CheckCircle, Trophy, Wallet } from "lucide-react";
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend 
 } from "recharts";
+import { userService } from "@/services/userService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
-const bidsData = [
-  { date: "2/3", bids: 4 },
-  { date: "3/3", bids: 3 },
-  { date: "4/3", bids: 6 },
-  { date: "5/3", bids: 8 },
-  { date: "6/3", bids: 4 },
-  { date: "7/3", bids: 12 },
-  { date: "8/3", bids: 2 },
-];
-
-const resultsData = [
-  { name: "Win", value: 4 },
-  { name: "Loss", value: 2 },
-];
 const COLORS = ["#ef4444", "#10b981"];
 
 export default function BidderStatisticsPage() {
   const [timeRange, setTimeRange] = useState("Last 7 Days");
+  const [userName, setUserName] = useState("");
+  const [avatar, setAvatar] = useState("/avatar.jfif");
+  const [stats, setStats] = useState({
+    totalBids: 0,
+    participated: 0,
+    won: 0,
+    totalSpent: 0
+  });
+  const [bidsData, setBidsData] = useState<any[]>([]);
+  const [resultsData, setResultsData] = useState<any[]>([]);
+
+  useEffect(() => {
+    userService.getProfile("")
+      .then(res => {
+        if (res.data) {
+          setUserName(res.data.fullName || "");
+          if (res.data.avatarUrl) setAvatar(res.data.avatarUrl);
+        }
+      })
+      .catch(console.error);
+
+    setBidsData([]);
+    setResultsData([]);
+    setStats({
+      totalBids: 0,
+      participated: 0,
+      won: 0,
+      totalSpent: 0
+    });
+  }, [timeRange]);
 
   return (
     <div className={`${jost.className} min-h-screen flex flex-col bg-white text-[#1a1a1a]`}>
@@ -45,9 +62,9 @@ export default function BidderStatisticsPage() {
         </nav>
 
         <ProfileHeader
-          name="Nguyen Van Huy"
+          name={userName}
           role="Bidder"
-          avatarUrl="/avatar.jfif"
+          avatarUrl={avatar}
           bannerUrl="/banner.jpg"
           onFeedbackClick={() => {}}
           onEditClick={() => {}}
@@ -57,34 +74,33 @@ export default function BidderStatisticsPage() {
           <Sidebar />
 
           <section className="md:col-span-9 space-y-12">
-            {/* Overview Cards */}
             <div>
               <h3 className="text-lg font-[900] text-red-600 mb-6">Overview Cards</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     <StatCard 
                         label="Total Bids" 
-                        value={12} 
+                        value={stats.totalBids} 
                         icon={<Gavel className="text-yellow-500" size={28} />} 
                         borderColor="border-yellow-400" 
                         labelColor="text-[#FACC15]"
                     />
                     <StatCard 
                         label="Participated" 
-                        value={6} 
+                        value={stats.participated} 
                         icon={<CheckCircle className="text-green-500" size={28} />} 
                         borderColor="border-green-400" 
                         labelColor="text-[#FACC15]"
                     />
                     <StatCard 
                         label="Won" 
-                        value={4} 
+                        value={stats.won} 
                         icon={<Trophy className="text-orange-500" size={28} />} 
                         borderColor="border-orange-400"
                         labelColor="text-[#FACC15]"
                     />
                     <StatCard 
                         label="Total Spent" 
-                        value="72,000,000" 
+                        value={stats.totalSpent} 
                         icon={<Wallet className="text-blue-600" size={28} />} 
                         borderColor="border-blue-600" 
                         labelColor="text-[#FACC15]"
@@ -93,7 +109,6 @@ export default function BidderStatisticsPage() {
                     </div>
             </div>
 
-            {/* Bids Chart */}
             <div>
               <div className="flex justify-between items-end mb-6">
                 <h3 className="text-lg font-[900] text-red-600">Bids Chart</h3>
@@ -118,7 +133,6 @@ export default function BidderStatisticsPage() {
               </div>
             </div>
 
-            {/* Auction Results Chart */}
             <div className="pt-8 border-t border-gray-100">
               <h3 className="text-lg font-[900] text-red-600 mb-6">Auction Results Chart</h3>
               <div className="h-[300px] w-full flex flex-col items-center">

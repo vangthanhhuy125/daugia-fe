@@ -4,25 +4,24 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { X, ChevronDown } from "lucide-react";
 import { Jost } from "next/font/google";
+import { auctionService } from "@/services/auctionService";
+import { biddingService } from "@/services/biddingService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
 interface LiveModalProps {
   isOpen: boolean;
   onClose: () => void;
+  auctionId?: string | null;
 }
 
-export const LiveModal = ({ isOpen, onClose }: LiveModalProps) => {
+export const LiveModal = ({ isOpen, onClose, auctionId }: LiveModalProps) => {
   const [timeLeft, setTimeLeft] = useState("Loading...");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [auctionDetail, setAuctionDetail] = useState<any>(null);
+  const [bidHistory, setBidHistory] = useState<any[]>([]);
 
-  const initialBidHistory = [
-    { no: 3, name: "John Smith", amount: 20000000, time: "10/3/2026 23:44:09", isLeading: true },
-    { no: 2, name: "Alice Nguyen", amount: 19800000, time: "10/3/2026 13:03:19", isLeading: false },
-    { no: 1, name: "Tony Phan", amount: 19500000, time: "10/3/2026 11:25:06", isLeading: false },
-  ];
-
-  const sortedBidHistory = [...initialBidHistory].sort((a, b) => {
+  const sortedBidHistory = [...bidHistory].sort((a, b) => {
     return sortOrder === "asc" ? a.amount - b.amount : b.amount - a.amount;
   });
 
@@ -31,8 +30,34 @@ export const LiveModal = ({ isOpen, onClose }: LiveModalProps) => {
   };
 
   useEffect(() => {
-    if (!isOpen) return;
-    const targetDate = new Date().getTime() + (4 * 24 * 60 * 60 * 1000) + (11 * 60 * 60 * 1000) + (44 * 60 * 1000) + (30 * 1000);
+    if (isOpen && auctionId) {
+      auctionService.getByIdPublic(Number(auctionId))
+        .then(res => setAuctionDetail(res.data))
+        .catch(err => console.error(err));
+
+      biddingService.getImmutableHistory(auctionId)
+        .then(res => {
+          const mapped = res.data.content.map((item: any, index: number) => ({
+            no: index + 1,
+            name: item.bidderEmailMasked || "Anonymous",
+            amount: item.amount,
+            time: new Date(item.bidTime).toLocaleString('en-GB'),
+            isLeading: index === 0
+          }));
+          setBidHistory(mapped);
+        })
+        .catch(err => console.error(err));
+    } else {
+      setAuctionDetail(null);
+      setBidHistory([]);
+    }
+  }, [isOpen, auctionId]);
+
+  useEffect(() => {
+    if (!isOpen || !auctionDetail?.biddingEndTime) return;
+    
+    const targetDate = new Date(auctionDetail.biddingEndTime).getTime();
+    
     const interval = setInterval(() => {
       const now = new Date().getTime();
       const distance = targetDate - now;
@@ -48,22 +73,22 @@ export const LiveModal = ({ isOpen, onClose }: LiveModalProps) => {
       setTimeLeft(`${days.toString().padStart(2, "0")} days ${hours.toString().padStart(2, "0")} hours ${minutes.toString().padStart(2, "0")} minutes ${seconds.toString().padStart(2, "0")} seconds`);
     }, 1000);
     return () => clearInterval(interval);
-  }, [isOpen]);
+  }, [isOpen, auctionDetail]);
 
   if (!isOpen) return null;
 
-  const details = [
-    { label: "Starting price:", value: "19,000,000 VND" },
-    { label: "Property code:", value: "7f3c2c5e-4f92-4d6b-8f6a-5c2b9a1f4a11" },
-    { label: "Bid increment:", value: "200,000 VND" },
-    { label: "Buy now price:", value: "27,000,000 VND" },
-    { label: "Status:", value: "Ongoing" },
-    { label: "Category:", value: "Electronics" },
-    { label: "Registration time:", value: "5/3/2026 09:00:00" },
-    { label: "Approval time:", value: "7/3/2026 09:00:00" },
-    { label: "Bidding start time:", value: "10/3/2026 09:00:00" },
-    { label: "Bidding end time:", value: "15/3/2026 09:00:00" },
-  ];
+  const details = auctionDetail ? [
+    { label: "Starting price:", value: `${auctionDetail.startingPrice?.toLocaleString()} VND` },
+    { label: "Property code:", value: auctionDetail.id?.toString() },
+    { label: "Bid increment:", value: `${auctionDetail.bidIncrement?.toLocaleString()} VND` },
+    { label: "Buy now price:", value: auctionDetail.buyNowPrice ? `${auctionDetail.buyNowPrice.toLocaleString()} VND` : "N/A" },
+    { label: "Status:", value: auctionDetail.status },
+    { label: "Category:", value: auctionDetail.categoryName },
+    { label: "Registration time:", value: auctionDetail.createdAt ? new Date(auctionDetail.createdAt).toLocaleString('en-GB') : "N/A" },
+    { label: "Approval time:", value: auctionDetail.updatedAt ? new Date(auctionDetail.updatedAt).toLocaleString('en-GB') : "N/A" },
+    { label: "Bidding start time:", value: auctionDetail.biddingStartTime ? new Date(auctionDetail.biddingStartTime).toLocaleString('en-GB') : "N/A" },
+    { label: "Bidding end time:", value: auctionDetail.biddingEndTime ? new Date(auctionDetail.biddingEndTime).toLocaleString('en-GB') : "N/A" },
+  ] : [];
 
   return (
     <div className={`${jost.className} fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 md:p-6 animate-in fade-in duration-200`}>
@@ -79,20 +104,20 @@ export const LiveModal = ({ isOpen, onClose }: LiveModalProps) => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-5 flex flex-col gap-4">
               <div className="relative w-full aspect-[4/3] bg-gray-50 rounded-3xl overflow-hidden border border-gray-200">
-                <Image src="/banner.jpg" alt="Main product" fill className="object-cover" />
+                <Image src={auctionDetail?.images?.[0]?.imageUrl || "/banner.jpg"} alt="Main product" fill className="object-cover" />
               </div>
               <div className="flex gap-4 overflow-x-auto">
                 <div className="relative w-32 h-24 flex-shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
-                  <Image src="/banner.jpg" alt="Thumb 1" fill className="object-cover" />
+                  <Image src={auctionDetail?.images?.[1]?.imageUrl || "/banner.jpg"} alt="Thumb 1" fill className="object-cover" />
                 </div>
                 <div className="relative w-32 h-24 flex-shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
-                  <Image src="/nen.jpg" alt="Thumb 2" fill className="object-cover" />
+                  <Image src={auctionDetail?.images?.[2]?.imageUrl || "/nen.jpg"} alt="Thumb 2" fill className="object-cover" />
                 </div>
               </div>
             </div>
 
             <div className="lg:col-span-7 flex flex-col gap-4">
-              <h3 className="text-2xl font-[900] text-gray-900">ASUS ROG Strix G16 Gaming Laptop</h3>
+              <h3 className="text-2xl font-[900] text-gray-900">{auctionDetail?.productName || "Loading..."}</h3>
               <div>
                 <p className="text-[#d32f2f] font-bold text-sm mb-2">Auction Time Remaining:</p>
                 <div className="border border-gray-300 rounded-none p-4 text-center">
@@ -103,7 +128,7 @@ export const LiveModal = ({ isOpen, onClose }: LiveModalProps) => {
                 <div className="flex justify-between items-start gap-4">
                   <span className="font-bold text-[#d32f2f] whitespace-nowrap text-[15px]">Description:</span>
                   <span className="text-right font-medium text-gray-800 text-[15px] leading-relaxed">
-                    High-performance gaming laptop equipped<br/>with Intel Core i7 processor, NVIDIA RTX 4060<br/>GPU, 16GB RAM, and 1TB SSD. Ideal for<br/>gaming, streaming, and high-end graphics<br/>work.
+                    {auctionDetail?.description || ""}
                   </span>
                 </div>
                 {details.map((item, idx) => (
@@ -137,14 +162,20 @@ export const LiveModal = ({ isOpen, onClose }: LiveModalProps) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedBidHistory.map((bid, idx) => (
-                    <tr key={idx} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${bid.isLeading ? 'text-blue-700 font-[900] bg-blue-50/20' : 'text-gray-700 font-medium'}`}>
-                      <td className="py-4 border-r border-gray-100">{bid.no}</td>
-                      <td className="py-4 border-r border-gray-100">{bid.name}</td>
-                      <td className="py-4 border-r border-gray-100">{bid.amount.toLocaleString()} VND</td>
-                      <td className="py-4">{bid.time}</td>
+                  {sortedBidHistory.length > 0 ? (
+                    sortedBidHistory.map((bid, idx) => (
+                      <tr key={idx} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${bid.isLeading ? 'text-blue-700 font-[900] bg-blue-50/20' : 'text-gray-700 font-medium'}`}>
+                        <td className="py-4 border-r border-gray-100">{bid.no}</td>
+                        <td className="py-4 border-r border-gray-100">{bid.name}</td>
+                        <td className="py-4 border-r border-gray-100">{bid.amount.toLocaleString()} VND</td>
+                        <td className="py-4">{bid.time}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-gray-500 font-medium">No bids yet.</td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>

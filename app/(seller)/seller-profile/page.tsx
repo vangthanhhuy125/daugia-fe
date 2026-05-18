@@ -19,17 +19,15 @@ export default function SellerProfilePage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // State lưu trữ data giống hệt format của Bidder
   const [userData, setUserData] = useState({
-    fullname: "Nguyen Van Huy",
-    email: "nguyenvanhuy@gmail.com",
-    phone: "0123456789",
-    street: "No. 96, Street No. 12, Block 5",
-    province: "Ho Chi Minh City",
-    ward: "Thu Duc Ward"
+    fullname: "",
+    email: "",
+    phone: "",
+    street: "",
+    province: "",
+    ward: ""
   });
 
-  // Mảng mapping data
   const profileData = [
     { label: "Fullname:", value: userData.fullname },
     { label: "Email:", value: userData.email, isLink: true },

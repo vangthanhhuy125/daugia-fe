@@ -1,30 +1,42 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { categoryService } from "@/services/categoryService";
 
 interface EditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  category: { id: number; name: string; description: string } | null;
-  onUpdate: (data: { id: number; name: string; description: string }) => void;
+  category: { id: string; name: string; description: string } | null;
+  onUpdate: (data: { id: string; name: string; description: string }) => void;
 }
 
 export const EditCategoryModal = ({ isOpen, onClose, category, onUpdate }: EditModalProps) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (category) {
       setName(category.name);
-      setDescription(category.description);
+      setDescription(category.description || "");
+      setError("");
     }
   }, [category]);
 
   if (!isOpen || !category) return null;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!name.trim()) return;
-    onUpdate({ id: category.id, name: name.trim(), description: description.trim() });
-    onClose();
+    try {
+      setIsSubmitting(true);
+      await categoryService.update(category.id, { name: name.trim(), description: description.trim() });
+      onUpdate({ id: category.id, name: name.trim(), description: description.trim() });
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to update category");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -48,7 +60,10 @@ export const EditCategoryModal = ({ isOpen, onClose, category, onUpdate }: EditM
               <label className="block text-sm font-semibold text-slate-800">Category name</label>
               <input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (error) setError("");
+                }}
                 type="text"
                 className="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
               />
@@ -58,18 +73,24 @@ export const EditCategoryModal = ({ isOpen, onClose, category, onUpdate }: EditM
               <label className="block text-sm font-semibold text-slate-800">Description</label>
               <textarea
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  if (error) setError("");
+                }}
                 className="mt-2 h-48 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 resize-none"
               />
             </div>
           </div>
 
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
           <div className="flex justify-center pt-2">
             <button
               onClick={handleConfirm}
-              className="inline-flex items-center justify-center rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98]"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50"
             >
-              Confirm
+              {isSubmitting ? "Confirming..." : "Confirm"}
             </button>
           </div>
         </div>

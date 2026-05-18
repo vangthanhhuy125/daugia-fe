@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Jost } from "next/font/google";
+import { authService } from "@/services/authService";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -14,9 +15,23 @@ const jost = Jost({
 export default function ForgotPasswordPage() {
   const router = useRouter();
 
-  const handleSendCode = (e: React.FormEvent) => {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/verify");
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      await authService.forgotPassword({ email });
+      router.push(`/verify?email=${encodeURIComponent(email)}`);
+    } catch (err: any) {
+      setError(err.message || "Failed to send verification code.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -55,6 +70,12 @@ export default function ForgotPasswordPage() {
         <div className="max-w-xl w-full mx-auto lg:mx-0 pt-20">
           <h1 className="text-5xl font-[900] text-black mb-8">Forgot password</h1>
           
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl text-red-700 text-sm font-medium">
+              {error}
+            </div>
+          )}
+          
           <div className="space-y-1 text-gray-700 font-medium mb-8">
             <p>Enter your registered email address.</p>
             <p>We will send a 6-digit verification code (OTP) to your email.</p>
@@ -64,7 +85,10 @@ export default function ForgotPasswordPage() {
             <div className="space-y-2">
               <input
                 type="email"
-                //required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+                required
                 placeholder="Email address"
                 className="w-full h-16 bg-[#e0e0e0] rounded-full px-8 text-lg outline-none focus:ring-4 ring-blue-600/20 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all shadow-inner"
               />
@@ -73,9 +97,14 @@ export default function ForgotPasswordPage() {
             <div className="pt-4 flex flex-col items-center lg:items-start gap-8">
               <button
                 type="submit"
-                className="w-full h-14 bg-blue-600 text-white font-[900] text-xl rounded-full shadow-lg hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all"
+                disabled={isLoading}
+                className="w-full h-14 bg-blue-600 text-white font-[900] text-xl rounded-full shadow-lg hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all disabled:bg-blue-400 disabled:scale-100 flex items-center justify-center"
               >
-                Send Verification Code
+                {isLoading ? (
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  "Send Verification Code"
+                )}
               </button>
 
               <div className="mt-8 text-center lg:text-left font-medium text-gray-600">

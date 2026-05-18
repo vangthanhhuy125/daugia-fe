@@ -8,7 +8,7 @@ const jost = Jost({
 });
 
 interface AuctionCardProps {
-  id: string;
+  id: string | number;
   label: string;
   time: string;
   image: string;

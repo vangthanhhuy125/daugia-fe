@@ -7,7 +7,7 @@ export interface AdminAuctionCardProps {
   id: number;
   title: string;
   image: string;
-  status: "Upcoming" | "Live" | "Ended";
+  status: "Pending" | "Upcoming" | "Live" | "Ended";
   openDate?: string;
   endDate?: string;
   endedDate?: string;

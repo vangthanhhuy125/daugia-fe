@@ -1,69 +1,65 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Jost } from "next/font/google";
 import { X, ArrowUpDown } from "lucide-react";
+import { userService } from "@/services/userService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "600", "700", "900"] });
 
 interface HistoryRecord {
-  id: number;
+  id: string;
   time: string;
   date: string;
   role: string;
   act: string;
   reason: string;
+  timestamp: number;
 }
 
 interface ProcessingHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  historyData?: HistoryRecord[];
+  userId?: string | null;
 }
 
-const defaultHistoryData: HistoryRecord[] = [
-  {
-    id: 1,
-    time: "11:30:00",
-    date: "01/01/2024",
-    role: "Admin: Minh Thien",
-    act: "Lock user accounts",
-    reason: "Your account has been temporarily locked due to suspicious bidding activity that violates our platform policies.",
-  },
-  {
-    id: 2,
-    time: "17:30:00",
-    date: "01/01/2024",
-    role: "Bidder: Tran Trung",
-    act: "Request to unlock account",
-    reason: "I believe my account was locked by mistake. I did not engage in any suspicious activity. Please review and help unlock my account.",
-  },
-  {
-    id: 3,
-    time: "09:15:00",
-    date: "02/01/2024",
-    role: "Admin: Minh Thien",
-    act: "Review appeal",
-    reason: "Reviewed the user's bidding history and logs to verify the claim of mistake.",
-  },
-  {
-    id: 4,
-    time: "14:20:00",
-    date: "02/01/2024",
-    role: "Admin: Hoang Nam",
-    act: "Unlock user accounts",
-    reason: "Verified system error. The account has been successfully restored and restrictions lifted.",
-  }
-];
-
-export function ProcessingHistoryModal({ isOpen, onClose, historyData = defaultHistoryData }: ProcessingHistoryModalProps) {
+export function ProcessingHistoryModal({ isOpen, onClose, userId }: ProcessingHistoryModalProps) {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [historyData, setHistoryData] = useState<HistoryRecord[]>([]);
+
+  useEffect(() => {
+    if (isOpen && userId) {
+      userService.getAccountLogs(userId, 0, 100)
+        .then(res => {
+          const mapped = res.data.content.map((log: any) => {
+            const dateObj = new Date(log.createdAt);
+            return {
+              id: log.id,
+              time: dateObj.toLocaleTimeString('en-GB'),
+              date: dateObj.toLocaleDateString('en-GB'),
+              role: `Admin: ${log.performedBy}`,
+              act: log.action === 'LOCK' ? 'Lock user accounts' : 'Unlock user accounts',
+              reason: log.reason,
+              timestamp: dateObj.getTime()
+            };
+          });
+          setHistoryData(mapped);
+        })
+        .catch(console.error);
+    } else {
+      setHistoryData([]);
+    }
+  }, [isOpen, userId]);
 
   if (!isOpen) return null;
 
   const handleSortDate = () => {
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   };
+
+  const sortedData = [...historyData].sort((a, b) => {
+    return sortOrder === "asc" ? a.timestamp - b.timestamp : b.timestamp - a.timestamp;
+  });
 
   return (
     <div
@@ -114,7 +110,7 @@ export function ProcessingHistoryModal({ isOpen, onClose, historyData = defaultH
             </thead>
 
             <tbody>
-              {historyData.map((record, index) => (
+              {sortedData.length > 0 ? sortedData.map((record, index) => (
                 <tr
                   key={record.id}
                   className="border-b border-black last:border-b-0"
@@ -153,7 +149,13 @@ export function ProcessingHistoryModal({ isOpen, onClose, historyData = defaultH
                     </div>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={3} className="py-8 text-center text-gray-500 font-medium border-b border-black">
+                    No processing history found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Jost } from "next/font/google";
 import { X, Camera, Check, RefreshCw, ChevronDown } from "lucide-react";
 import Cropper from "react-easy-crop";
+import { userService } from "@/services/userService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "600", "700", "900"] });
 
@@ -83,9 +84,26 @@ export default function AdminFormModal({ isOpen, onClose, mode, initialData, onS
 
   useEffect(() => {
     if (isOpen) {
-      if (mode === "edit" && initialData) {
-        setFormData(initialData);
-        setCurrentAvatar(initialData.avatar || null);
+      if (mode === "edit" && initialData?.id) {
+        userService.getUserById(initialData.id.toString())
+          .then(res => {
+            const u = res.data;
+            setFormData({
+              id: initialData.id,
+              fullname: u.fullName || "",
+              displayName: u.fullName || "",
+              status: u.enabled ? "Active" : "Inactive",
+              email: u.email || "",
+              phone: u.phone || "",
+              street: initialData.street || "",
+              city: initialData.city || "",
+              ward: initialData.ward || "",
+              password: "",
+              permissions: initialData.permissions || [],
+            });
+            setCurrentAvatar(u.avatarUrl || null);
+          })
+          .catch(console.error);
       } else {
         setFormData(emptyForm);
         setCurrentAvatar(null);

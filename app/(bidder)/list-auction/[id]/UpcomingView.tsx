@@ -3,28 +3,40 @@
 import React, { useState, useEffect } from "react";
 
 interface UpcomingViewProps {
-  infoRows: { label: string; value: string; statusColor?: string }[];
+  infoRows: { label: string; value: any; statusColor?: string }[];
+  auctionDetail?: any;
 }
 
-export const UpcomingView = ({ infoRows }: UpcomingViewProps) => {
-  const [timeLeft, setTimeLeft] = useState({
-    days: 1,
-    hours: 1,
-    minutes: 4,
-    seconds: 56,
-  });
+export const UpcomingView = ({ infoRows, auctionDetail }: UpcomingViewProps) => {
+  const [timeLeft, setTimeLeft] = useState("Loading...");
 
   useEffect(() => {
+    if (!auctionDetail?.biddingStartTime) return;
+
+    const targetDate = new Date(auctionDetail.biddingStartTime).getTime();
+
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
-        if (prev.minutes > 0) return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
-        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        return prev;
-      });
+      const now = new Date().getTime();
+      const distance = targetDate - now;
+
+      if (distance < 0) {
+        clearInterval(timer);
+        setTimeLeft("00 days 00 hours 00 minutes 00 seconds");
+        return;
+      }
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setTimeLeft(
+        `${String(days).padStart(2, "0")} days ${String(hours).padStart(2, "0")} hours ${String(minutes).padStart(2, "0")} minutes ${String(seconds).padStart(2, "0")} seconds`
+      );
     }, 1000);
+
     return () => clearInterval(timer);
-  }, []);
+  }, [auctionDetail]);
 
   return (
     <div className="space-y-8">
@@ -34,7 +46,7 @@ export const UpcomingView = ({ infoRows }: UpcomingViewProps) => {
         </p>
         <div className="w-full py-4 px-6 border border-gray-200 rounded-xl flex justify-center items-center shadow-sm">
           <span className="text-xl md:text-2xl font-medium text-gray-800 tabular-nums">
-            {String(timeLeft.days).padStart(2, "0")} days {String(timeLeft.hours).padStart(2, "0")} hours {String(timeLeft.minutes).padStart(2, "0")} minutes {String(timeLeft.seconds).padStart(2, "0")} seconds
+            {timeLeft}
           </span>
         </div>
       </div>
@@ -42,7 +54,7 @@ export const UpcomingView = ({ infoRows }: UpcomingViewProps) => {
       <div className="flex gap-4 items-start">
         <span className="text-[#CE2029] font-bold text-base whitespace-nowrap">Description:</span>
         <p className="text-gray-900 font-normal leading-relaxed text-right flex-grow">
-          High-performance gaming laptop equipped with Intel Core i7 processor, NVIDIA RTX 4060 GPU, 16GB RAM, and 1TB SSD. Ideal for gaming, streaming, and high-end graphics work.
+          {auctionDetail?.description || ""}
         </p>
       </div>
 

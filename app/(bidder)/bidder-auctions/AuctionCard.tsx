@@ -3,10 +3,10 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import HistoryAuctionModal from "./HistoryAuctionModal"; // Import modal bạn vừa làm ở trên
+import HistoryAuctionModal from "./HistoryAuctionModal";
 
 interface AuctionCardProps {
-  id: string; // Thêm ID để điều hướng
+  id: string;
   title: string;
   image: string;
   time: string;
@@ -34,13 +34,10 @@ const AuctionCard = ({
 
   const handleDetailsClick = () => {
     if (status === "watching") {
-      // Chuyển hướng sang trang chi tiết dạng Upcoming
       router.push(`/list-auction/${id}`); 
     } else if (status === "participating") {
-      // Chuyển hướng sang trang chi tiết dạng Live
       router.push(`/list-auction/${id}`);
     } else if (status === "history") {
-      // Mở Pop-up lịch sử
       setIsHistoryModalOpen(true);
     }
   };
@@ -98,11 +95,11 @@ const AuctionCard = ({
         )}
       </div>
 
-      {/* Render Modal History nếu status là history */}
       {status === "history" && (
         <HistoryAuctionModal 
           isOpen={isHistoryModalOpen} 
           onClose={() => setIsHistoryModalOpen(false)} 
+          {...({ auctionId: id } as any)}
         />
       )}
     </>

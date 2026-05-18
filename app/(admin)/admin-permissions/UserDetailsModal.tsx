@@ -4,11 +4,12 @@ import React, { useState, useEffect } from "react";
 import { Jost } from "next/font/google";
 import { X } from "lucide-react";
 import { ProcessingHistoryModal } from "./ProcessingHistoryModal"; 
+import { userService } from "@/services/userService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "600", "700", "900"] });
 
 interface UserData {
-  id: number;
+  id: string;
   name: string;
   joinDate: string;
   role: "Seller" | "Bidder";
@@ -33,23 +34,39 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
   const [unlockResponse, setUnlockResponse] = useState("");
   const [confirmAction, setConfirmAction] = useState<null | "block" | "unlock" | "reject">(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [realUserDetail, setRealUserDetail] = useState<any>(null);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user?.id) {
       setView("details");
       setBlockReason("");
       setUnlockResponse("");
       setConfirmAction(null);
+
+      userService.getUserById(user.id)
+        .then(res => setRealUserDetail(res.data))
+        .catch(console.error);
+
+      userService.getAccountLogs(user.id, 0, 1)
+        .then(res => {
+          const lastLog = res.data.content?.[0];
+          if (lastLog && lastLog.action === "LOCK") {
+            setBlockReason(lastLog.reason || "");
+          }
+        })
+        .catch(console.error);
+    } else {
+      setRealUserDetail(null);
     }
   }, [isOpen, user]);
 
   if (!isOpen || !user) return null;
 
   const enriched: UserData = {
-    email: "nguyenvanhuy@gmail.com",
-    phone: "0123456789",
-    address: "No. 96, Street No. 12, Block 5, Thu Duc Ward, Ho Chi Minh City",
-    lockReason: "Your account has been temporarily locked due to suspicious bidding activity that violates our platform policies.",
+    email: realUserDetail?.email || "N/A",
+    phone: realUserDetail?.phone || "N/A",
+    address: "N/A",
+    lockReason: blockReason || "No details provided.",
     requestReason: "I believe my account was locked by mistake. I did not engage in any suspicious activity. Please review and help unlock my account.",
     ...user,
   };
@@ -58,14 +75,27 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
   const hasUnlock = enriched.hasUnlockRequest;
 
   const handleBlockClick = () => setView("block-confirm");
-  const handleConfirmBlock = () => {
-    onClose();
+  
+  const handleConfirmBlock = async () => {
+    try {
+      await userService.lockUser(user.id, blockReason || "Violated platform terms");
+      onClose();
+    } catch (error) {
+      console.error(error);
+    }
   };
+  
   const handleCancelBlock = () => setView("details");
 
-  const handleUnlockClick = () => {
-    onClose();
+  const handleUnlockClick = async () => {
+    try {
+      await userService.unlockUser(user.id, unlockResponse || "Account restored after admin review");
+      onClose();
+    } catch (error) {
+      console.error(error);
+    }
   };
+  
   const handleRejectClick = () => {
     onClose();
   };
@@ -111,7 +141,7 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
               <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 p-6">
                 <div className="w-full max-w-md rounded-[24px] bg-white p-6 shadow-2xl">
                   <p className="text-lg font-bold text-center text-gray-900 mb-4">Confirm action</p>
-                  <p className="text-sm text-gray-700 mb-6">{getConfirmMessage()}</p>
+                  <p className="text-sm text-gray-707 mb-6">{getConfirmMessage()}</p>
                   <div className="flex justify-center gap-4">
                     <button
                       onClick={() => setConfirmAction(null)}
@@ -134,13 +164,17 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
                 className="rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-amber-400 via-amber-300 to-orange-200"
                 style={{ width: 140, height: 140 }}
               >
-                <svg viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full object-cover">
-                  <rect width="88" height="88" fill="#F5A623" rx="44" />
-                  <path d="M12 80 C12 62 28 54 44 54 C60 54 76 62 76 80" fill="#3B5998" />
-                  <circle cx="44" cy="36" r="18" fill="#F5C67A" />
-                  <path d="M26 30 C26 16 62 16 62 30 C62 22 56 16 44 16 C32 16 26 22 26 30Z" fill="#7B4F2E" />
-                  <path d="M35 54 L44 64 L53 54" fill="#4A6FA5" />
-                </svg>
+                {realUserDetail?.avatarUrl ? (
+                  <img src={realUserDetail.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <svg viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full object-cover">
+                    <rect width="88" height="88" fill="#F5A623" rx="44" />
+                    <path d="M12 80 C12 62 28 54 44 54 C60 54 76 62 76 80" fill="#3B5998" />
+                    <circle cx="44" cy="36" r="18" fill="#F5C67A" />
+                    <path d="M26 30 C26 16 62 16 62 30 C62 22 56 16 44 16 C32 16 26 22 26 30Z" fill="#7B4F2E" />
+                    <path d="M35 54 L44 64 L53 54" fill="#4A6FA5" />
+                  </svg>
+                )}
               </div>
 
               <div className="flex-1 pt-1">
@@ -177,7 +211,6 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
                       {enriched.status}
                     </span>
 
-                    {/* Action buttons */}
                     {!isBlocked && (
                       <button
                         onClick={handleBlockClick}
@@ -191,7 +224,7 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
                     {isBlocked && hasUnlock && (
                       <button
                         className="text-white text-sm font-bold px-6 py-1.5 rounded-full transition-all hover:opacity-90 active:scale-95"
-                        style={{ background: "#0000FF" }} // Adjusted to match Figma blue
+                        style={{ background: "#0000FF" }} 
                         onClick={() => setView("unlock-review")}
                       >
                         Unlock Request
@@ -273,6 +306,7 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
       <ProcessingHistoryModal 
         isOpen={isHistoryModalOpen} 
         onClose={() => setIsHistoryModalOpen(false)} 
+        userId={user.id}
       />
     </div>
   );

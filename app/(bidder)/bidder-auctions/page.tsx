@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Jost } from "next/font/google";
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Search, RotateCcw } from "lucide-react";
 import DatePicker from "react-datepicker";
@@ -13,6 +13,8 @@ import { Sidebar } from "@/components/Sidebar";
 import AuctionCard from "./AuctionCard";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { EditProfileModal } from "@/components/EditProfileModal";
+import { auctionService } from "@/services/auctionService";
+import { userService } from "@/services/userService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -29,14 +31,59 @@ export default function BidderAuctionsPage() {
 
   const tabs = ["Watching", "Participating", "History"];
   
-  const allAuctions = [
-    { id: "1", title: "Laptop Gaming MSI", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Starting Bid", image: "/laptop-image.png", status: "Watching" },
-    { id: "2", title: "Laptop Gaming Dell", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Starting Bid", image: "/laptop-image.png", status: "Watching" },
-    { id: "3", title: "Laptop Gaming ASUS", category: "Electronics", time: "10/3/2026 09:00:00", price: "15,500,000 VND", priceLabel: "Current Bid", image: "/laptop-image.png", status: "Participating", isLeading: true },
-    { id: "6", title: "Laptop Gaming ABCDS", category: "Electronics", time: "10/3/2026 09:00:00", price: "15,500,000 VND", priceLabel: "Current Bid", image: "/laptop-image.png", status: "Participating", isLeading: false },
-    { id: "4", title: "Laptop Gaming HP", category: "Electronics", time: "10/3/2026 09:00:00", price: "20,000,000 VND", priceLabel: "Winning Bid", image: "/laptop-image.png", status: "History", result: "won" },
-    { id: "5", title: "Laptop Gaming Razer", category: "Electronics", time: "10/3/2026 09:00:00", price: "12,000,000 VND", priceLabel: "Final Bid", image: "/laptop-image.png", status: "History", result: "lost" },
-  ];
+  const [allAuctions, setAllAuctions] = useState<any[]>([]);
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await userService.getProfile("");
+        setProfile(res.data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      try {
+        const res = await auctionService.getMyAuctions(0, 100);
+        const mapped = res.data.content.map((item: any) => {
+          let s = "Watching";
+          if (item.status === "UPCOMING") s = "Participating";
+          if (item.status === "ENDED") s = "History";
+
+          let label = "Starting Bid";
+          if (s === "Participating") label = "Current Bid";
+          if (s === "History") label = "Final Bid";
+
+          const rawDate = s === "History" ? item.biddingEndTime : item.biddingStartTime;
+          const dateStr = rawDate ? new Date(rawDate).toLocaleString('en-GB') : "N/A";
+          const priceVal = item.currentPrice || item.startingPrice || 0;
+
+          return {
+            id: item.id.toString(),
+            title: item.productName,
+            category: item.categoryName,
+            time: dateStr,
+            price: `${priceVal.toLocaleString()} VND`,
+            priceLabel: label,
+            image: item.images?.[0]?.imageUrl || item.thumbnailUrl,
+            status: s,
+            isLeading: item.isLeading || false, 
+            result: s === "History" ? (item.isWinner ? "won" : "lost") : undefined,
+            rawDate: rawDate
+          };
+        });
+        setAllAuctions(mapped);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchAuctions();
+  }, []);
 
   const handleReset = () => {
     setSearchTerm("");
@@ -49,18 +96,32 @@ export default function BidderAuctionsPage() {
   const filteredAuctions = allAuctions.filter(item => {
     const matchesTab = item.status === activeTab;
     const matchesSearch = searchTerm.length >= 2 
-      ? item.title.toLowerCase().includes(searchTerm.toLowerCase()) 
+      ? item.title?.toLowerCase().includes(searchTerm.toLowerCase()) 
       : true;
     const matchesCategory = category === "All category" 
       ? true 
       : item.category === category;
-    
-    return matchesTab && matchesSearch && matchesCategory;
+
+    let matchesDate = true;
+    if (item.rawDate) {
+      const itemDate = new Date(item.rawDate);
+      itemDate.setHours(0, 0, 0, 0);
+      
+      if (startDate && endDate) {
+        matchesDate = itemDate >= startDate && itemDate <= endDate;
+      } else if (startDate) {
+        matchesDate = itemDate >= startDate;
+      } else if (endDate) {
+        matchesDate = itemDate <= endDate;
+      }
+    }
+
+    return matchesTab && matchesSearch && matchesCategory && matchesDate;
   });
 
   const filterInputClass = "bg-[#f5f5f5] rounded-xl px-6 py-3 outline-none border-none focus:ring-2 ring-gray-200 transition-all text-sm font-medium w-full h-12";
 
-    const handleStartDateChange = (date: Date | null) => {
+  const handleStartDateChange = (date: Date | null) => {
     setStartDate(date);
     if (date && endDate && date > endDate) {
       setEndDate(date);
@@ -87,9 +148,9 @@ export default function BidderAuctionsPage() {
         </nav>
 
         <ProfileHeader 
-          name="Nguyen Van Huy"
-          role="Bidder"
-          avatarUrl="/avatar.jfif"
+          name={profile?.fullName || "Loading..."}
+          role={profile?.role?.name || "Bidder"}
+          avatarUrl={profile?.avatarUrl || "/avatar.jfif"}
           bannerUrl="/banner.jpg"
           onFeedbackClick={() => setIsFeedbackOpen(true)}
           onEditClick={() => setIsEditOpen(true)}
@@ -132,6 +193,7 @@ export default function BidderAuctionsPage() {
                   <label className="text-xs font-bold text-gray-400 ml-2">From date:</label>
                   <div className="relative">
                     <DatePicker
+                      selected={startDate}
                       onChange={handleStartDateChange}
                       selectsStart
                       startDate={startDate}
@@ -181,7 +243,7 @@ export default function BidderAuctionsPage() {
                 </div>
 
                 <div className="flex items-center gap-4 text-gray-400 font-[900] text-xs uppercase tracking-widest">
-                  <span>1 - 15</span>
+                  <span>{filteredAuctions.length > 0 ? `1 - ${filteredAuctions.length}` : "0"}</span>
                   <div className="flex gap-2">
                     <ChevronLeft size={18} className="cursor-pointer hover:text-gray-900 transition" />
                     <ChevronRight size={18} className="cursor-pointer hover:text-gray-900 transition" />
@@ -222,7 +284,7 @@ export default function BidderAuctionsPage() {
         isOpen={isEditOpen} 
         onClose={() => setIsEditOpen(false)} 
         onConfirm={() => setIsEditOpen(false)}
-        initialData={{ fullname: "Nguyen Van Huy", email: "huy@gmail.com", phone: "123", street: "96", province: "HCM", ward: "Thu Duc" }}
+        initialData={profile || {}}
       />
       
       <Footer />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -10,13 +10,14 @@ import AdminDetailsModal from "./AdminDetailsModal";
 import AdminFormModal, { AdminFormData } from "./AdminFormModal";
 import { Search, Calendar, Eye, LockKeyhole, RotateCcw, ArrowUpDown, Plus } from "lucide-react";
 import DatePicker from "react-datepicker";
+import { userService } from "@/services/userService";
 // @ts-ignore
 import "react-datepicker/dist/react-datepicker.css";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "600", "700", "900"] });
 
 interface UserData {
-  id: number;
+  id: string;
   name: string;
   joinDate: string;
   role: "Seller" | "Bidder";
@@ -25,25 +26,12 @@ interface UserData {
 }
 
 interface AdminData {
-  id: number;
+  id: string;
   displayName: string;
   creationDate: string;
   status: "Active" | "Inactive";
+  _raw?: any;
 }
-
-const mockUsers: UserData[] = [
-  { id: 1, name: "Tran Trung", joinDate: "01/01/2024", role: "Seller", status: "Active", hasUnlockRequest: false },
-  { id: 2, name: "Alex Nguyen", joinDate: "01/01/2024", role: "Bidder", status: "Active", hasUnlockRequest: false },
-  { id: 3, name: "Donal Trump", joinDate: "01/01/2024", role: "Seller", status: "Blocked", hasUnlockRequest: true },
-  { id: 4, name: "John Alo", joinDate: "01/01/2024", role: "Seller", status: "Blocked", hasUnlockRequest: false },
-];
-
-const mockAdmins: AdminData[] = [
-  { id: 1, displayName: "HOANGHO", creationDate: "01/01/2024", status: "Active" },
-  { id: 2, displayName: "NGUYENAN", creationDate: "01/01/2024", status: "Active" },
-  { id: 3, displayName: "CHICUONG", creationDate: "01/01/2024", status: "Inactive" },
-  { id: 4, displayName: "NGOCHUNG", creationDate: "01/01/2024", status: "Inactive" },
-];
 
 export default function AdminPermissionsPage() {
   const [activeTab, setActiveTab] = useState<"users" | "admins">("users");
@@ -56,6 +44,9 @@ export default function AdminPermissionsPage() {
   const [sortDesc, setSortDesc] = useState(true);
   const [isUnlockSorted, setIsUnlockSorted] = useState(false);
 
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [admins, setAdmins] = useState<AdminData[]>([]);
+
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
@@ -64,6 +55,48 @@ export default function AdminPermissionsPage() {
   const [isAdminFormModalOpen, setIsAdminFormModalOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [adminToEdit, setAdminToEdit] = useState<AdminFormData | null>(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await userService.getAllUsers(0, 1000);
+        const allUsers = res.data.content;
+
+        const mappedUsers: UserData[] = [];
+        const mappedAdmins: AdminData[] = [];
+
+        allUsers.forEach((u: any) => {
+          const fallbackDate = new Date().toLocaleDateString('en-GB');
+
+          if (u.role?.name === "ADMIN") {
+            mappedAdmins.push({
+              id: u.id,
+              displayName: u.fullName,
+              creationDate: fallbackDate,
+              status: u.enabled ? "Active" : "Inactive",
+              _raw: u
+            });
+          } else {
+            mappedUsers.push({
+              id: u.id,
+              name: u.fullName,
+              joinDate: fallbackDate,
+              role: u.role?.name === "SELLER" ? "Seller" : "Bidder",
+              status: u.locked ? "Blocked" : "Active",
+              hasUnlockRequest: false 
+            });
+          }
+        });
+
+        setUsers(mappedUsers);
+        setAdmins(mappedAdmins);
+      } catch (error) {
+        console.error("Failed to fetch users", error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const handleOpenUserModal = (user: UserData) => {
     setSelectedUser(user);
@@ -96,20 +129,22 @@ export default function AdminPermissionsPage() {
   };
 
   const handleEditAdmin = () => {
-    if (!selectedAdmin) return;
+    if (!selectedAdmin || !selectedAdmin._raw) return;
+    
+    const u = selectedAdmin._raw;
     
     const editData: AdminFormData = {
-      id: selectedAdmin.id,
-      fullname: "Nguyen Van Huy", 
-      displayName: selectedAdmin.displayName,
-      status: selectedAdmin.status,
-      email: "nguyenvanhuy@gmail.com",
-      phone: "0123456789",
-      street: "No. 96, Street No. 12, Block 5",
-      city: "Ho Chi Minh City",
-      ward: "Thu Duc Ward",
-      password: "123123", 
-      permissions: ["Auction", "Categories", "Feedback", "Permissions"],
+      id: Number(u.id) || 0,
+      fullname: u.fullName || "",
+      displayName: u.fullName || "",
+      status: u.enabled ? "Active" : "Inactive",
+      email: u.email || "", 
+      phone: u.phone || "", 
+      street: u.street || "",
+      city: u.province || "",
+      ward: u.ward || "",
+      password: "", 
+      permissions: u.role?.name ? [u.role.name] : [], 
     };
     
     setFormMode("edit");
@@ -119,7 +154,7 @@ export default function AdminPermissionsPage() {
   };
 
   const filteredUsers = useMemo(() => {
-    let filtered = mockUsers.filter(u => {
+    let filtered = users.filter(u => {
       const matchSearch = search.length >= 2 ? u.name.toLowerCase().includes(search.toLowerCase()) : true;
       const matchStatus = statusFilters.length === 0 || statusFilters.includes(u.status);
       const matchRole = roleFilters.length === 0 || roleFilters.includes(u.role);
@@ -138,10 +173,10 @@ export default function AdminPermissionsPage() {
     }
 
     return filtered.sort((a, b) => sortDesc ? parseDate(b.joinDate).getTime() - parseDate(a.joinDate).getTime() : parseDate(a.joinDate).getTime() - parseDate(b.joinDate).getTime());
-  }, [search, startDate, endDate, statusFilters, roleFilters, sortDesc, isUnlockSorted]);
+  }, [users, search, startDate, endDate, statusFilters, roleFilters, sortDesc, isUnlockSorted]);
 
   const filteredAdmins = useMemo(() => {
-    let filtered = mockAdmins.filter(a => {
+    let filtered = admins.filter(a => {
       const matchSearch = search.length >= 2 ? a.displayName.toLowerCase().includes(search.toLowerCase()) : true;
       const matchStatus = statusFilters.length === 0 || statusFilters.includes(a.status);
       
@@ -154,7 +189,7 @@ export default function AdminPermissionsPage() {
       return matchSearch && matchStatus && matchDate;
     });
     return filtered.sort((a, b) => sortDesc ? parseDate(b.creationDate).getTime() - parseDate(a.creationDate).getTime() : parseDate(a.creationDate).getTime() - parseDate(b.creationDate).getTime());
-  }, [search, startDate, endDate, statusFilters, sortDesc]);
+  }, [admins, search, startDate, endDate, statusFilters, sortDesc]);
 
   const currentData = activeTab === "users" ? filteredUsers : filteredAdmins;
 
@@ -313,13 +348,13 @@ export default function AdminPermissionsPage() {
         <UserDetailsModal
           isOpen={isUserModalOpen}
           onClose={() => setIsUserModalOpen(false)}
-          user={selectedUser}
+          user={selectedUser as any}
         />
 
         <AdminDetailsModal
           isOpen={isAdminModalOpen}
           onClose={() => setIsAdminModalOpen(false)}
-          admin={selectedAdmin}
+          admin={selectedAdmin as any}
           onEditClick={handleEditAdmin}
         />
 

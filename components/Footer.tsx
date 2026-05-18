@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Jost } from 'next/font/google';
 import { useAuth } from "@/app/context/AuthContext"; 
+import { userService } from "@/services/userService";
 
 const jost = Jost({ 
   subsets: ['latin'],
@@ -12,8 +13,22 @@ const jost = Jost({
 });
 
 const Footer = () => {
-  const { role } = useAuth();
-  const currentRole = role || "guest";
+  const { isLoggedIn, role } = useAuth();
+  const [currentRole, setCurrentRole] = useState(role || "guest");
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      userService.getProfile("")
+        .then(res => {
+          if (res.data?.role?.name) {
+            setCurrentRole(res.data.role.name.toLowerCase());
+          }
+        })
+        .catch(console.error);
+    } else {
+      setCurrentRole("guest");
+    }
+  }, [isLoggedIn, role]);
   
   const isAdminOrSeller = currentRole === "admin" || currentRole === "seller";
 
@@ -50,7 +65,7 @@ const Footer = () => {
             Quick Links
           </h3>
           
-          {role === "admin" && (
+          {currentRole === "admin" && (
             <ul className="space-y-3 text-gray-300 text-sm">
               <li><Link href="/admin-home" className="hover:text-white transition">Home</Link></li>
               <li><Link href="/admin-auctions" className="hover:text-white transition">Auctions</Link></li>
@@ -59,7 +74,7 @@ const Footer = () => {
             </ul>
           )}
 
-          {role === "seller" && (
+          {currentRole === "seller" && (
             <ul className="space-y-3 text-gray-300 text-sm">
               <li><Link href="/seller-profile" className="hover:text-white transition">Profile</Link></li>
               <li><Link href="/seller-auctions" className="hover:text-white transition">Auctions</Link></li>

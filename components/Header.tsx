@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Jost } from 'next/font/google';
 import { useAuth } from "@/app/context/AuthContext"; 
+import { userService } from "@/services/userService";
 
 const jost = Jost({ 
   subsets: ['latin'],
@@ -22,15 +23,26 @@ const Header = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false); 
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const userName = "Huy"; 
+  const [userName, setUserName] = useState(""); 
 
-  const notifications = [
-    { id: 1, text: "You have a new bid on MSI Raider", time: "2 mins ago" },
-    { id: 2, text: "Auction for ASUS ROG has ended", time: "1 hour ago" },
-    { id: 3, text: "Welcome to SmartAuction!", time: "1 day ago" },
-  ];
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      userService.getProfile("")
+        .then(res => {
+          if (res.data) {
+            setUserName(res.data.fullName || "");
+          }
+        })
+        .catch(console.error);
+    } else {
+      setUserName("");
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -119,10 +131,18 @@ const Header = () => {
                         <User size={18} className="text-gray-400 group-hover:text-[#d32f2f]" />
                         <span className="text-sm font-bold text-gray-700">{role === 'seller' ? 'Seller Profile' : 'Personal Profile'}</span>
                       </Link>
-                      <Link href={role === 'seller' ? "/seller/change-password" : "/bidder-change-password"} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors group">
+
+                      <button 
+                        onClick={() => {
+                          setShowChangePasswordModal(true);
+                          setUserMenuOpen(false); 
+                        }}
+                        className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors group"
+                      >
                         <Lock size={18} className="text-gray-400 group-hover:text-[#d32f2f]" />
                         <span className="text-sm font-bold text-gray-700">Change Password</span>
-                      </Link>
+                      </button>
+
                       <button 
                         onClick={(e) => { e.preventDefault(); setShowNotifications(true); }}
                         className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors group"
@@ -207,15 +227,15 @@ const Header = () => {
             </>
           ) : role === 'seller' ? (
             <>
-              <Link href="/seller/dashboard" className="block text-gray-700 font-bold tracking-wider hover:text-[#d32f2f]">Dashboard</Link>
-              <Link href="/seller/create-auction" className="block text-[#d32f2f] font-black tracking-wider">Create New Auction</Link>
+              <Link href="/seller-home" className="block text-gray-700 font-bold tracking-wider hover:text-[#d32f2f]">Dashboard</Link>
+              <Link href="/seller-auctions" className="block text-[#d32f2f] font-black tracking-wider">Create New Auction</Link>
             </>
           ) : null}
           
           <div className="pt-4 flex flex-col gap-3 border-t border-gray-50">
             {isLoggedIn ? (
               <>
-                <Link href={role === 'seller' ? "/seller/profile" : "/bidder-profile"} className="text-gray-700 font-bold tracking-wider">Personal Profile</Link>
+                <Link href={role === 'seller' ? "/seller-profile" : "/bidder-profile"} className="text-gray-700 font-bold tracking-wider">Personal Profile</Link>
                 <button onClick={() => setShowLogoutModal(true)} className="flex items-center gap-2 text-[#d32f2f] font-bold tracking-wider">
                   <LogOut size={18} /> Log Out
                 </button>
@@ -260,6 +280,66 @@ const Header = () => {
           </div>
         </div>
       )}
+
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[28px] shadow-2xl max-w-[500px] w-full p-6 md:p-8 relative scale-in-center animate-in zoom-in-95 duration-200">
+            
+            <button 
+              onClick={() => setShowChangePasswordModal(false)}
+              className="absolute right-5 top-5 text-black hover:text-gray-500 transition-colors"
+            >
+              <X size={24} strokeWidth={2.5} />
+            </button>
+
+            <h2 className="text-[26px] font-bold text-black mb-6">Change Password</h2>
+
+            <div className="space-y-5">
+              <div>
+                <label className="block text-[15px] font-medium text-black mb-1.5">
+                  Enter Current Password <span className="text-[#CE2029]">(*)</span>
+                </label>
+                <input 
+                  type="password" 
+                  className="w-full border border-gray-400 rounded-full px-4 py-2.5 outline-none focus:border-blue-600 transition-colors text-[15px]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[15px] font-medium text-black mb-1.5">
+                  Enter New Password <span className="text-[#CE2029]">(*)</span>
+                </label>
+                <input 
+                  type="password" 
+                  className="w-full border border-gray-400 rounded-full px-4 py-2.5 outline-none focus:border-blue-600 transition-colors text-[15px]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[15px] font-medium text-black mb-1.5">
+                  Confirm New Password <span className="text-[#CE2029]">(*)</span>
+                </label>
+                <input 
+                  type="password" 
+                  className="w-full border border-gray-400 rounded-full px-4 py-2.5 outline-none focus:border-blue-600 transition-colors text-[15px]"
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-center">
+              <button 
+                onClick={() => {
+                  setShowChangePasswordModal(false);
+                }}
+                className="bg-[#0000FF] text-white text-[16px] font-bold rounded-full px-12 py-2.5 hover:bg-blue-800 transition-all active:scale-95 shadow-md"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </header>
   );
 };

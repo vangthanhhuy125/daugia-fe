@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { Camera, MessageSquare, Edit3, X, Check, PlusCircle } from "lucide-react";
 import Cropper from "react-easy-crop";
+import { userService } from "@/services/userService";
 
 interface ProfileHeaderProps {
   name: string;
@@ -60,6 +61,10 @@ export const ProfileHeader = ({
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
+  useEffect(() => {
+    setCurrentAvatar(avatarUrl);
+  }, [avatarUrl]);
+
   const handleCameraButtonClick = () => fileInputRef.current?.click();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,6 +83,13 @@ export const ProfileHeader = ({
     if (imageToCrop && croppedAreaPixels) {
       try {
         const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels);
+        
+        const response = await fetch(croppedImage);
+        const blob = await response.blob();
+        const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+        
+        await userService.updateProfile(undefined, undefined, file);
+
         setCurrentAvatar(croppedImage); 
         setImageToCrop(null); 
         setZoom(1); 
@@ -161,7 +173,7 @@ export const ProfileHeader = ({
         <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-20 md:-mt-24">
           <div className="relative">
             <div className="relative w-40 h-40 md:w-52 md:h-52 rounded-full border-[6px] border-white overflow-hidden bg-white shadow-2xl">
-              <Image src={currentAvatar} alt="Avatar" fill className="object-cover" unoptimized />
+              <Image src={currentAvatar || "/avatar.jfif"} alt="Avatar" fill className="object-cover" unoptimized />
             </div>
             <input
               type="file"

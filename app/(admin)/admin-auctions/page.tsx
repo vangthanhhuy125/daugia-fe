@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -13,10 +13,11 @@ import "react-datepicker/dist/react-datepicker.css";
 import AdminAuctionCard from "./AdminAuctionCard"; 
 import AuctionDetailModal from "./AuctionDetailModal";
 import AwaitingApprovalModal from "./AwaitingApprovalModal";
+import { auctionService } from "@/services/auctionService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
-type AuctionStatus = "Upcoming" | "Live" | "Ended";
+type AuctionStatus = "Pending" | "Upcoming" | "Live" | "Ended";
 
 interface AuctionSession {
   id: number;
@@ -28,28 +29,53 @@ interface AuctionSession {
   imageUrl: string;
 }
 
-const mockSessions: AuctionSession[] = [
-  { id: 1, name: "MSI Raider GE78 Gaming Laptop 1", status: "Upcoming", openDate: "15/3/2026", imageUrl: "/laptop-image.png" },
-  { id: 2, name: "MSI Raider GE78 Gaming Laptop 2", status: "Upcoming", openDate: "15/3/2026", imageUrl: "/laptop-image.png" },
-  { id: 3, name: "MSI Raider GE78 Gaming Laptop 3", status: "Upcoming", openDate: "15/3/2026", imageUrl: "/laptop-image.png" },
-  { id: 4, name: "MSI Raider GE78 Gaming Laptop 4", status: "Live", openDate: "5/3/2026", endDate: "12/3/2026", imageUrl: "/laptop-image.png" },
-  { id: 5, name: "MSI Raider GE78 Gaming Laptop 5", status: "Live", openDate: "5/3/2026", endDate: "12/3/2026", imageUrl: "/laptop-image.png" },
-  { id: 6, name: "MSI Raider GE78 Gaming Laptop 6", status: "Live", openDate: "5/3/2026", endDate: "12/3/2026", imageUrl: "/laptop-image.png" },
-  { id: 7, name: "MSI Raider GE78 Gaming Laptop 7", status: "Ended", endedDate: "1/3/2026", imageUrl: "/laptop-image.png" },
-  { id: 8, name: "MSI Raider GE78 Gaming Laptop 8", status: "Ended", endedDate: "1/3/2026", imageUrl: "/laptop-image.png" },
-];
-
-const mockPending = [
-  { id: 101, name: "Awaiting Item 1", registrationDay: "15/3/2026", registrant: "Nguyen Van A", imageUrl: "/laptop-image.png" },
-  { id: 102, name: "Awaiting Item 2", registrationDay: "16/3/2026", registrant: "Nguyen Van B", imageUrl: "/laptop-image.png" },
-  { id: 103, name: "Awaiting Item 3", registrationDay: "17/3/2026", registrant: "Nguyen Van C", imageUrl: "/laptop-image.png" },
-  { id: 104, name: "Awaiting Item 4", registrationDay: "18/3/2026", registrant: "Nguyen Van D", imageUrl: "/laptop-image.png" },
-  { id: 105, name: "Awaiting Item 5", registrationDay: "19/3/2026", registrant: "Nguyen Van E", imageUrl: "/laptop-image.png" },
-  { id: 106, name: "Awaiting Item 6", registrationDay: "20/3/2026", registrant: "Nguyen Van F", imageUrl: "/laptop-image.png" },
-  { id: 107, name: "Awaiting Item 7", registrationDay: "21/3/2026", registrant: "Nguyen Van G", imageUrl: "/laptop-image.png" },
-];
-
 export default function AdminAuctionsPage() {
+  const [mockSessions, setMockSessions] = useState<AuctionSession[]>([]);
+  const [mockPending, setMockPending] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      try {
+        const res = await auctionService.searchAdmin({ size: 1000 });
+        const items = res.data.content || [];
+        
+        const pending = items
+          .filter((i: any) => i.status === "PENDING")
+          .map((i: any) => ({
+            id: i.id,
+            name: i.productName,
+            registrationDay: new Date(i.createdAt).toLocaleDateString('en-GB'),
+            registrant: "Seller", 
+            imageUrl: i.thumbnailUrl || "/laptop-image.png"
+          }));
+          
+        const sessions = items
+          .filter((i: any) => i.status !== "PENDING" && i.status !== "REJECTED")
+          .map((i: any) => {
+            let s: AuctionStatus = "Upcoming";
+            if (i.status === "ACTIVE") s = "Live";
+            if (i.status === "ENDED") s = "Ended";
+            
+            return {
+              id: i.id,
+              name: i.productName,
+              status: s,
+              openDate: i.biddingStartTime ? new Date(i.biddingStartTime).toLocaleDateString('en-GB') : undefined,
+              endDate: i.biddingEndTime ? new Date(i.biddingEndTime).toLocaleDateString('en-GB') : undefined,
+              endedDate: s === "Ended" && i.biddingEndTime ? new Date(i.biddingEndTime).toLocaleDateString('en-GB') : undefined,
+              imageUrl: i.thumbnailUrl || "/laptop-image.png"
+            };
+          });
+          
+        setMockPending(pending);
+        setMockSessions(sessions);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchAuctions();
+  }, []);
+
   const [activeTab, setActiveTab] = useState<"sessions" | "awaiting">("sessions");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 6;
@@ -124,7 +150,7 @@ export default function AdminAuctionsPage() {
         return matchesSearch && matchesDate;
       });
     }
-  }, [activeTab, searchTerm, statusFilters, startDate, endDate]);
+  }, [activeTab, searchTerm, statusFilters, startDate, endDate, mockSessions, mockPending]);
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
   const currentItems = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);

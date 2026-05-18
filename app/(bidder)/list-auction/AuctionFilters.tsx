@@ -114,6 +114,7 @@ export const AuctionFilters = ({ onFilterChange, initialStatus }: AuctionFilters
           <label className="text-xs font-bold text-gray-400 ml-2">From date:</label>
           <div className="relative custom-datepicker">
             <DatePicker
+              selected={startDate}
               onChange={handleStartDateChange}
               selectsStart
               startDate={startDate}
@@ -131,6 +132,7 @@ export const AuctionFilters = ({ onFilterChange, initialStatus }: AuctionFilters
           <label className="text-xs font-bold text-gray-400 ml-2">To date:</label>
           <div className="relative custom-datepicker">
             <DatePicker
+              selected={endDate}
               onChange={handleEndDateChange}
               selectsEnd
               startDate={startDate}

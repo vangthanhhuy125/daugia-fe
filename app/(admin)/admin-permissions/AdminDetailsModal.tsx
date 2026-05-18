@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Jost } from "next/font/google";
 import { X, Camera, Pencil, Check } from "lucide-react";
 import Cropper from "react-easy-crop";
+import { userService } from "@/services/userService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "600", "700", "900"] });
 
@@ -53,6 +54,7 @@ export default function AdminDetailsModal({ isOpen, onClose, admin, onEditClick 
   
   const [currentAvatar, setCurrentAvatar] = useState<string | null>(null); 
   const [imageToCrop, setImageToCrop] = useState<string | null>(null); 
+  const [realAdminData, setRealAdminData] = useState<any>(null);
   
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -62,14 +64,28 @@ export default function AdminDetailsModal({ isOpen, onClose, admin, onEditClick 
     setCroppedAreaPixels(scrolledPixels);
   }, []);
 
+  useEffect(() => {
+    if (isOpen && admin?.id) {
+      userService.getUserById(admin.id.toString())
+        .then(res => {
+          setRealAdminData(res.data);
+          setCurrentAvatar(res.data.avatarUrl || null);
+        })
+        .catch(console.error);
+    } else {
+      setRealAdminData(null);
+      setCurrentAvatar(null);
+    }
+  }, [isOpen, admin]);
+
   if (!isOpen || !admin) return null;
 
   const enriched = {
-    fullName: "Nguyen Van Huy",
-    email: "nguyenvanhuy@gmail.com",
-    phone: "0123456789",
-    address: "No. 96, Street No. 12, Block 5, Thu Duc Ward, Ho Chi Minh City",
-    password: "admin@0001#00",
+    fullName: realAdminData?.fullName || admin.displayName || "",
+    email: realAdminData?.email || "N/A",
+    phone: realAdminData?.phone || "N/A",
+    address: "N/A",
+    password: "***",
     ...admin,
   };
 
@@ -87,6 +103,13 @@ export default function AdminDetailsModal({ isOpen, onClose, admin, onEditClick 
     if (imageToCrop && croppedAreaPixels) {
       try {
         const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels);
+        
+        const response = await fetch(croppedImage);
+        const blob = await response.blob();
+        const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+        
+        await userService.updateProfile(undefined, undefined, file);
+
         setCurrentAvatar(croppedImage); 
         setImageToCrop(null); 
         setZoom(1); 

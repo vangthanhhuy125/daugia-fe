@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { Jost } from "next/font/google";
+import { auctionService } from "@/services/auctionService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -15,16 +16,23 @@ interface AuctionDetailModalProps {
 
 const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [auctionDetail, setAuctionDetail] = useState<any>(null);
+
+  useEffect(() => {
+    if (isOpen && data?.id) {
+      auctionService.getByIdAdmin(data.id)
+        .then(res => setAuctionDetail(res.data))
+        .catch(err => console.error(err));
+    } else {
+      setAuctionDetail(null);
+    }
+  }, [isOpen, data]);
 
   if (!isOpen || !data) return null;
 
-  const isUpcoming = data.status === "Upcoming";
+  const isUpcoming = data.status === "Upcoming" || auctionDetail?.status === "PENDING" || auctionDetail?.status === "APPROVED";
 
-  const initialBidHistory = [
-    { no: 3, name: "John Smith", amount: 20000000, time: "10/3/2026 23:44:09", isLeading: true },
-    { no: 2, name: "Alice Nguyen", amount: 19800000, time: "10/3/2026 13:03:19", isLeading: false },
-    { no: 1, name: "Tony Phan", amount: 19500000, time: "10/3/2026 11:25:06", isLeading: false },
-  ];
+  const initialBidHistory: any[] = [];
 
   const sortedBidHistory = [...initialBidHistory].sort((a, b) => {
     return sortOrder === "asc" ? a.amount - b.amount : b.amount - a.amount;
@@ -34,18 +42,18 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
     setSortOrder(sortOrder === "desc" ? "asc" : "desc");
   };
 
-  const detailRows = [
-    { label: "Starting price:", value: "19,000,000 VND" },
-    { label: "Property code:", value: "7f3c2c5e-4f92-4d6b-8f6a-5c2b9a1f4a11" },
-    { label: "Bid increment:", value: "200,000 VND" },
-    { label: "Buy now price:", value: "27,000,000 VND" },
-    { label: "Status:", value: data.status },
-    { label: "Category:", value: "Electronics" },
-    { label: "Registration time:", value: "5/3/2026 09:00:00" },
-    { label: "Approval time:", value: "7/3/2026 09:00:00" },
-    { label: "Bidding start time:", value: data.openDate || "10/3/2026 09:00:00" },
-    { label: "Bidding end time:", value: data.endDate || "15/3/2026 09:00:00" },
-  ];
+  const detailRows = auctionDetail ? [
+    { label: "Starting price:", value: `${auctionDetail.startingPrice?.toLocaleString()} VND` },
+    { label: "Property code:", value: auctionDetail.id?.toString() },
+    { label: "Bid increment:", value: `${auctionDetail.bidIncrement?.toLocaleString()} VND` },
+    { label: "Buy now price:", value: auctionDetail.buyNowPrice ? `${auctionDetail.buyNowPrice.toLocaleString()} VND` : "N/A" },
+    { label: "Status:", value: auctionDetail.status },
+    { label: "Category:", value: auctionDetail.categoryName },
+    { label: "Registration time:", value: auctionDetail.createdAt ? new Date(auctionDetail.createdAt).toLocaleString('en-GB') : "N/A" },
+    { label: "Approval time:", value: auctionDetail.updatedAt ? new Date(auctionDetail.updatedAt).toLocaleString('en-GB') : "N/A" },
+    { label: "Bidding start time:", value: auctionDetail.biddingStartTime ? new Date(auctionDetail.biddingStartTime).toLocaleString('en-GB') : "N/A" },
+    { label: "Bidding end time:", value: auctionDetail.biddingEndTime ? new Date(auctionDetail.biddingEndTime).toLocaleString('en-GB') : "N/A" },
+  ] : [];
 
   return (
     <div className={`${jost.className} fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200`}>
@@ -63,15 +71,15 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
             
             <div className="lg:col-span-5 flex flex-col gap-6">
               <div className="relative w-full aspect-[4/3] bg-gray-50 rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
-                <Image src={data.imageUrl || "/banner.jpg"} alt="Main product" fill className="object-cover" />
+                <Image src={auctionDetail?.images?.[0]?.imageUrl || data.imageUrl || "/banner.jpg"} alt="Main product" fill className="object-cover" />
               </div>
 
               <div className="flex gap-4 overflow-x-auto pb-2">
                 <div className="relative w-32 h-24 shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
-                  <Image src={data.imageUrl || "/banner.jpg"} alt="Thumb 1" fill className="object-cover" />
+                  <Image src={auctionDetail?.images?.[1]?.imageUrl || data.imageUrl || "/banner.jpg"} alt="Thumb 1" fill className="object-cover" />
                 </div>
                 <div className="relative w-32 h-24 shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
-                  <Image src={data.imageUrl || "/nen.jpg"} alt="Thumb 2" fill className="object-cover" />
+                  <Image src={auctionDetail?.images?.[2]?.imageUrl || data.imageUrl || "/nen.jpg"} alt="Thumb 2" fill className="object-cover" />
                 </div>
               </div>
 
@@ -79,18 +87,18 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
                 <h3 className="text-[#d32f2f] font-[900] text-lg mb-2">Seller Info</h3>
                 <div className="grid grid-cols-[100px_1fr] gap-y-2 text-sm font-medium">
                   <span className="text-gray-900 font-black">Seller:</span>
-                  <span className="text-gray-700">Nguyen Van An</span>
+                  <span className="text-gray-700">{auctionDetail?.sellerName || "N/A"}</span>
                   <span className="text-gray-900 font-black">Email:</span>
-                  <span className="text-gray-700">nguyenvanan123@gmail.com</span>
+                  <span className="text-gray-700">{auctionDetail?.sellerEmail || "N/A"}</span>
                   <span className="text-gray-900 font-black">Sold:</span>
-                  <span className="text-gray-700">120</span>
+                  <span className="text-gray-700">0</span>
                 </div>
               </div>
             </div>
 
             <div className="lg:col-span-7 flex flex-col gap-4">
               <h3 className="text-2xl font-[900] text-gray-900">
-                {data.name || data.title}
+                {auctionDetail?.productName || data.name || data.title}
               </h3>
 
               {!isUpcoming && (
@@ -98,13 +106,13 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
                   <div>
                     <p className="text-[#d32f2f] font-bold text-sm mb-1">Highest Bid:</p>
                     <div className="border border-gray-300 rounded-none p-3 text-center bg-red-50/10 rounded-xl">
-                      <span className="text-2xl font-[900] text-[#d32f2f] tracking-wide">20,000,000 VND</span>
+                      <span className="text-2xl font-[900] text-[#d32f2f] tracking-wide">N/A</span>
                     </div>
                   </div>
                   <div>
                     <p className="text-[#d32f2f] font-bold text-sm mb-1">Winner:</p>
                     <div className="border border-gray-300 rounded-none p-3 text-center bg-red-50/10 rounded-xl">
-                      <span className="text-2xl font-[900] text-[#d32f2f] tracking-wide">John Smith</span>
+                      <span className="text-2xl font-[900] text-[#d32f2f] tracking-wide">N/A</span>
                     </div>
                   </div>
                 </div>
@@ -114,7 +122,7 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
                 <div className="flex justify-between items-start gap-4 border-b border-gray-50 pb-2">
                   <span className="font-[900] text-[#d32f2f] whitespace-nowrap text-[15px]">Description:</span>
                   <span className="text-right font-medium text-gray-800 text-[14px] leading-relaxed">
-                    High-performance gaming laptop equipped with Intel Core i7 processor, NVIDIA RTX 4060 GPU, 16GB RAM, and 1TB SSD.
+                    {auctionDetail?.description || ""}
                   </span>
                 </div>
 
@@ -153,14 +161,20 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedBidHistory.map((bid, idx) => (
-                      <tr key={idx} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${bid.isLeading ? 'text-blue-700 font-[900] bg-blue-50/20' : 'text-gray-700 font-medium'}`}>
-                        <td className="py-4 border-r border-gray-100">{bid.no}</td>
-                        <td className="py-4 border-r border-gray-100">{bid.name}</td>
-                        <td className="py-4 border-r border-gray-100 ">{bid.amount.toLocaleString()} VND</td>
-                        <td className="py-4">{bid.time}</td>
+                    {sortedBidHistory.length > 0 ? (
+                      sortedBidHistory.map((bid, idx) => (
+                        <tr key={idx} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${bid.isLeading ? 'text-blue-700 font-[900] bg-blue-50/20' : 'text-gray-700 font-medium'}`}>
+                          <td className="py-4 border-r border-gray-100">{bid.no}</td>
+                          <td className="py-4 border-r border-gray-100">{bid.name}</td>
+                          <td className="py-4 border-r border-gray-100 ">{bid.amount.toLocaleString()} VND</td>
+                          <td className="py-4">{bid.time}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-gray-500 font-medium">No bids yet.</td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -168,8 +182,6 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
             </div>
           )}
         </div>
-
-        
 
         <style jsx global>{`
           .custom-scrollbar::-webkit-scrollbar { width: 8px; }

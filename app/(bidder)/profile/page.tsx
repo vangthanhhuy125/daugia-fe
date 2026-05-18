@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -8,6 +8,7 @@ import { ProfileHeader } from "@/components/ProfileHeader";
 import { Sidebar } from "@/components/Sidebar";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { EditProfileModal } from "@/components/EditProfileModal";
+import { userService } from "@/services/userService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -16,20 +17,47 @@ export default function UserProfilePage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const [userData, setUserData] = useState({
-    fullname: "Nguyen Van Huy",
-    email: "nguyenvanhuy@gmail.com",
-    phone: "0123456789",
-    street: "No. 96, Street No. 12, Block 5",
-    province: "Ho Chi Minh City",
-    ward: "Thu Duc Ward"
+    fullname: "",
+    email: "",
+    phone: "",
+    street: "",
+    province: "",
+    ward: ""
   });
+
+  const [displayRole, setDisplayRole] = useState("Bidder");
+  const [memberSince, setMemberSince] = useState("");
+  const [avatar, setAvatar] = useState("/avatar.jfif");
+
+  useEffect(() => {
+    userService.getProfile("")
+      .then(res => {
+        if (res.data) {
+          setUserData({
+            fullname: res.data.fullName || "",
+            email: res.data.email || "",
+            phone: res.data.phone || "",
+            street: "",
+            province: "",
+            ward: ""
+          });
+          if (res.data.role?.name) {
+            setDisplayRole(res.data.role.name);
+          }
+          if (res.data.avatarUrl) {
+            setAvatar(res.data.avatarUrl);
+          }
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const profileData = [
     { label: "Fullname:", value: userData.fullname },
     { label: "Email:", value: userData.email, isLink: true },
     { label: "Phone number:", value: userData.phone },
-    { label: "Address:", value: `${userData.street}, ${userData.ward}, ${userData.province}` },
-    { label: "Member since:", value: "2025" },
+    { label: "Address:", value: `${userData.street || ""}${userData.ward ? `, ${userData.ward}` : ""}${userData.province ? `, ${userData.province}` : ""}` },
+    { label: "Member since:", value: memberSince },
   ];
 
   return (
@@ -44,8 +72,8 @@ export default function UserProfilePage() {
 
         <ProfileHeader 
           name={userData.fullname}
-          role="Bidder"
-          avatarUrl="/avatar.jfif"
+          role={displayRole}
+          avatarUrl={avatar}
           bannerUrl="/banner.jpg"
           onFeedbackClick={() => setIsFeedbackOpen(true)}
           onEditClick={() => setIsEditModalOpen(true)}

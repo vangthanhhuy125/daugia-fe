@@ -1,22 +1,46 @@
 "use client";
 
-import React from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Jost } from "next/font/google";
+import { authService } from "@/services/authService";
 
 const jost = Jost({
   subsets: ["latin"],
   weight: ["400", "500", "700", "900"],
 });
 
-export default function CreateNewPasswordPage() {
+function CreateNewPasswordContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") || "";
+  const otp = searchParams.get("otp") || "";
 
-  const handleReset = (e: React.FormEvent) => {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/login"); 
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      await authService.resetPassword({
+        email,
+        otp,
+        newPassword,
+        confirmPassword,
+      });
+      router.push("/login"); 
+    } catch (err: any) {
+      setError(err.message || "Failed to reset password.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -55,6 +79,12 @@ export default function CreateNewPasswordPage() {
         <div className="max-w-xl w-full mx-auto lg:mx-0 pt-20">
           <h1 className="text-5xl font-[900] text-black mb-10">Create New Password</h1>
 
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl text-red-700 text-sm font-medium">
+              {error}
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleReset}>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 ml-1">
@@ -62,6 +92,9 @@ export default function CreateNewPasswordPage() {
               </label>
               <input
                 type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={isLoading}
                 required
                 className="w-full h-14 bg-[#e0e0e0] rounded-full px-8 outline-none focus:ring-4 ring-blue-600/20 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all shadow-inner"
               />
@@ -73,6 +106,9 @@ export default function CreateNewPasswordPage() {
               </label>
               <input
                 type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={isLoading}
                 required
                 className="w-full h-14 bg-[#e0e0e0] rounded-full px-8 outline-none focus:ring-4 ring-blue-600/20 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all shadow-inner"
               />
@@ -81,14 +117,27 @@ export default function CreateNewPasswordPage() {
             <div className="pt-8 flex justify-center lg:justify-start">
               <button
                 type="submit"
-                className="w-72 h-14 bg-blue-600 text-white font-[900] text-xl rounded-full shadow-lg hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all"
+                disabled={isLoading}
+                className="w-72 h-14 bg-blue-600 text-white font-[900] text-xl rounded-full shadow-lg hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all disabled:bg-blue-400 disabled:scale-100 flex items-center justify-center"
               >
-                Reset Password
+                {isLoading ? (
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  "Reset Password"
+                )}
               </button>
             </div>
           </form>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CreateNewPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-white text-xl font-medium">Loading...</div>}>
+      <CreateNewPasswordContent />
+    </Suspense>
   );
 }
