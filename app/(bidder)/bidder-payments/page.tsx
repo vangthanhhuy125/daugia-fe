@@ -29,7 +29,7 @@ export default function BidderPaymentPage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await userService.getProfile("");
+        const res = await userService.getMe();
         setProfile(res.data);
       } catch (error) {
         console.error(error);

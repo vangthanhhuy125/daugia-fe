@@ -35,16 +35,16 @@ export default function SellerStatisticsPage() {
   const [avatar, setAvatar] = useState("/avatar.jfif");
 
   useEffect(() => {
-    userService.getProfile("")
+    userService.getMe()
       .then(res => {
         if (res.data) {
           setUserData({
             fullname: res.data.fullName || "",
             email: res.data.email || "",
             phone: res.data.phone || "",
-            street: "",
-            province: "",
-            ward: ""
+            street: res.data.street || "",
+            province: res.data.province || "",
+            ward: res.data.ward || ""
           });
           if (res.data.avatarUrl) {
             setAvatar(res.data.avatarUrl);

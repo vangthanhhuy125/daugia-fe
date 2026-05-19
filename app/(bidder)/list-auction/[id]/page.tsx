@@ -23,7 +23,7 @@ export default function AuctionDetailPage() {
 
   useEffect(() => {
     if (id) {
-      auctionService.getByIdPublic(Number(id))
+      auctionService.getByIdPublic(id)
         .then(res => {
           const data = res.data;
           setAuctionDetail(data);

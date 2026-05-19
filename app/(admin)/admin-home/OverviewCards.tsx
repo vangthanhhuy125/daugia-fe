@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Users, Gavel, MousePointer2, Box } from "lucide-react";
-import { userService } from "@/services/userService";
 import { auctionService } from "@/services/auctionService";
 import { categoryService } from "@/services/categoryService";
 
@@ -69,14 +68,13 @@ export const OverviewCards = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [usersRes, auctionsRes, categoriesRes] = await Promise.all([
-          userService.getAllUsers(0, 1),
-          auctionService.searchPublic({ page: 0, size: 1 }),
+        const [auctionsRes, categoriesRes] = await Promise.all([
+          auctionService.searchAdmin({ size: 1 }),
           categoryService.getAll(0, 1)
         ]);
 
         setStats({
-          users: usersRes.data?.totalElements ?? 0,
+          users: 0,
           auctions: auctionsRes.data?.totalElements ?? 0,
           bids: 0, 
           categories: categoriesRes.data?.totalElements ?? 0

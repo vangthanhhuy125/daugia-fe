@@ -10,6 +10,7 @@ import {
 import { Jost } from 'next/font/google';
 import { useAuth } from "@/app/context/AuthContext"; 
 import { userService } from "@/services/userService";
+import { authService } from "@/services/authService";
 
 const jost = Jost({ 
   subsets: ['latin'],
@@ -29,10 +30,14 @@ const Header = () => {
   const [userName, setUserName] = useState(""); 
 
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [cpError, setCpError] = useState("");
 
   useEffect(() => {
     if (isLoggedIn) {
-      userService.getProfile("")
+      userService.getMe()
         .then(res => {
           if (res.data) {
             setUserName(res.data.fullName || "");
@@ -58,6 +63,7 @@ const Header = () => {
   const confirmLogout = () => {
     const currentRole = role;
     logout();
+    setShowLogoutModal(false);
     
     if (currentRole === 'bidder') {
       window.location.href = "/bidder-home";
@@ -65,6 +71,20 @@ const Header = () => {
       window.location.href = "/login";
     } else {
       window.location.href = "/";
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setCpError("");
+    try {
+      await authService.changePassword({ currentPassword, newPassword, confirmPassword });
+      setShowChangePasswordModal(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      alert("Password changed successfully");
+    } catch (err: any) {
+      setCpError(err?.message || err?.data?.message || "Failed to change password");
     }
   };
 
@@ -301,6 +321,8 @@ const Header = () => {
                 </label>
                 <input 
                   type="password" 
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
                   className="w-full border border-gray-400 rounded-full px-4 py-2.5 outline-none focus:border-blue-600 transition-colors text-[15px]"
                 />
               </div>
@@ -311,6 +333,8 @@ const Header = () => {
                 </label>
                 <input 
                   type="password" 
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full border border-gray-400 rounded-full px-4 py-2.5 outline-none focus:border-blue-600 transition-colors text-[15px]"
                 />
               </div>
@@ -321,16 +345,19 @@ const Header = () => {
                 </label>
                 <input 
                   type="password" 
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full border border-gray-400 rounded-full px-4 py-2.5 outline-none focus:border-blue-600 transition-colors text-[15px]"
                 />
+                {cpError && (
+                  <p className="text-red-600 text-sm text-center">{cpError}</p>
+                )}
               </div>
             </div>
 
             <div className="mt-8 flex justify-center">
               <button 
-                onClick={() => {
-                  setShowChangePasswordModal(false);
-                }}
+                onClick={handleChangePassword}
                 className="bg-[#0000FF] text-white text-[16px] font-bold rounded-full px-12 py-2.5 hover:bg-blue-800 transition-all active:scale-95 shadow-md"
               >
                 Confirm

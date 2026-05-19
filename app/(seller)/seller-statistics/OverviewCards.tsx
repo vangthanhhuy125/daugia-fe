@@ -78,7 +78,7 @@ export const OverviewCards = () => {
         const activeAuctions = auctionList.filter((item: any) => item.status === "ACTIVE").length;
 
         // 3. Số sản phẩm đã bán thành công (Ví dụ status là 'COMPLETED' hoặc 'SOLD')
-        const soldAuctions = auctionList.filter((item: any) => item.status === "COMPLETED");
+        const soldAuctions = auctionList.filter((item: any) => item.status === "ENDED");
         const soldItems = soldAuctions.length;
 
         // 4. Tính tổng doanh thu bằng cách cộng dồn giá mua ngay hoặc giá cao nhất của các bài đã sold

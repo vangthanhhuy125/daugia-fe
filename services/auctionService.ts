@@ -14,7 +14,7 @@ export const auctionService = {
     return apiClient.get('/auctions', { params });
   },
 
-  getByIdPublic: (id: number): Promise<ApiResponse<AuctionResponse>> => {
+  getByIdPublic: (id: string | number): Promise<ApiResponse<AuctionResponse>> => {
     return apiClient.get(`/auctions/${id}`);
   },
 
@@ -43,15 +43,15 @@ export const auctionService = {
     return apiClient.get('/auctions/my', { params: { page, size } });
   },
 
-  searchAdmin: (params?: AuctionFilterRequest): Promise<ApiResponse<PageResponse<AuctionSummaryResponse>>> => {
+  searchAdmin: (params?: Partial<AuctionFilterRequest>): Promise<ApiResponse<PageResponse<AuctionSummaryResponse>>> => {
     return apiClient.get('/admin/auctions', { params });
   },
 
-  getByIdAdmin: (id: number): Promise<ApiResponse<AuctionResponse>> => {
+  getByIdAdmin: (id: string | number): Promise<ApiResponse<AuctionResponse>> => {
     return apiClient.get(`/admin/auctions/${id}`);
   },
 
-  reviewAuction: (id: number, request: AuctionReviewRequest): Promise<ApiResponse<AuctionResponse>> => {
+  reviewAuction: (id: string | number, request: AuctionReviewRequest): Promise<ApiResponse<AuctionResponse>> => {
     return apiClient.put(`/admin/auctions/${id}/review`, request);
   },
 };

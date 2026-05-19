@@ -11,38 +11,24 @@ import { auctionService } from "@/services/auctionService";
 
 const jost = Jost({ subsets: ['latin'], weight: ['400', '700', '900'] });
 
+const displayToBackend: Record<string, string> = {
+  Upcoming: "APPROVED",
+  Live: "ACTIVE",
+  Ended: "ENDED",
+};
+
+const backendToDisplay: Record<string, string> = {
+  APPROVED: "Upcoming",
+  ACTIVE: "Live",
+  ENDED: "Ended",
+};
+
 function AuctionListContent() {
   const searchParams = useSearchParams();
   const statusFromUrl = searchParams.get("status");
 
   const [auctionsData, setAuctionsData] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchAuctions = async () => {
-      try {
-        const res = await auctionService.searchPublic({ size: 100 });
-        const mapped = res.data.content.map((item: any) => {
-          let s = "Upcoming";
-          if (item.status === "ACTIVE") s = "Live";
-          if (item.status === "ENDED") s = "Ended";
-
-          return {
-            id: item.id.toString(),
-            image: item.thumbnailUrl || "/laptop-image.png",
-            title: item.productName,
-            status: s,
-            openDate: item.biddingStartTime ? new Date(item.biddingStartTime).toISOString() : new Date().toISOString(),
-            endDate: item.biddingEndTime ? new Date(item.biddingEndTime).toISOString() : undefined,
-            category: item.categoryName || "Electronics",
-          };
-        });
-        setAuctionsData(mapped);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    fetchAuctions();
-  }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
@@ -60,6 +46,36 @@ function AuctionListContent() {
       setCurrentPage(1);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      try {
+        const backendStatuses = filters.status
+          .map((s) => displayToBackend[s])
+          .filter(Boolean);
+
+        const res = await auctionService.searchPublic({
+          search: filters.searchTerm || undefined,
+          size: 100,
+          status: backendStatuses.length === 1 ? (backendStatuses[0] as any) : undefined,
+        });
+
+        const mapped = res.data.content.map((item: any) => ({
+          id: item.id.toString(),
+          image: item.thumbnailUrl || "/laptop-image.png",
+          title: item.productName,
+          status: backendToDisplay[item.status] || "Upcoming",
+          openDate: item.biddingStartTime ? new Date(item.biddingStartTime).toISOString() : new Date().toISOString(),
+          endDate: item.biddingEndTime ? new Date(item.biddingEndTime).toISOString() : undefined,
+          category: item.categoryName || "Electronics",
+        }));
+        setAuctionsData(mapped);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchAuctions();
+  }, [filters.searchTerm, filters.status]);
 
   const ITEMS_PER_PAGE = 9;
 

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Jost } from "next/font/google";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authService } from "@/services/authService";
+import { decodeJwt } from "@/utils/auth";
 import { useAuth } from "@/app/context/AuthContext";
 
 const jost = Jost({
@@ -113,6 +114,11 @@ function VerifyOTPContent() {
       localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);
 
+      const payload = decodeJwt(access_token);
+      if (payload?.sub) {
+        localStorage.setItem("userId", payload.sub);
+      }
+
       const normalizedRole = role.toLowerCase();
       login({ role: normalizedRole, token: access_token });
 
@@ -124,7 +130,7 @@ function VerifyOTPContent() {
         router.push("/bidder-home");
       }
     } catch (err: any) {
-      setError(err.message || "Invalid OTP code.");
+      setError(err.message || err.data?.message || "Invalid OTP code.");
     } finally {
       setIsLoading(false);
     }

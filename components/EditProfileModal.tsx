@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
 import { Jost } from "next/font/google";
 import { userService } from "@/services/userService";
+import { locationService, ProvinceDto, WardDto } from "@/services/locationService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "700", "900"] });
 
@@ -23,10 +24,50 @@ interface EditProfileModalProps {
 
 export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: EditProfileModalProps) => {
   const [formData, setFormData] = useState(initialData);
+  const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
+  const [wards, setWards] = useState<WardDto[]>([]);
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState<string>("");
+  const [selectedWardCode, setSelectedWardCode] = useState<string>("");
 
   useEffect(() => {
     if (isOpen) {
       setFormData(initialData);
+      setSelectedProvinceCode("");
+      setSelectedWardCode("");
+      setWards([]);
+
+      const loadProvinces = async () => {
+        try {
+          const res = await locationService.getProvinces();
+          const data = res.data || [];
+          setProvinces(data);
+
+          if (initialData.province) {
+            const matchedProvince = data.find((p) => p.name === initialData.province);
+            if (matchedProvince) {
+              const codeStr = matchedProvince.code.toString();
+              setSelectedProvinceCode(codeStr);
+              setFormData((prev) => ({ ...prev, province: matchedProvince.name }));
+
+              const wardsRes = await locationService.getWards(matchedProvince.code);
+              const wardsData = wardsRes.data || [];
+              setWards(wardsData);
+
+              if (initialData.ward) {
+                const matchedWard = wardsData.find((w) => w.name === initialData.ward);
+                if (matchedWard) {
+                  setSelectedWardCode(matchedWard.code.toString());
+                  setFormData((prev) => ({ ...prev, ward: matchedWard.name }));
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      loadProvinces();
     }
   }, [isOpen, initialData]);
 
@@ -34,7 +75,14 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
 
   const handleConfirm = async () => {
     try {
-      await userService.updateProfile(formData.fullname, formData.phone);
+      await userService.updateProfile(
+        formData.fullname,
+        formData.phone,
+        undefined,
+        formData.street,
+        formData.ward,
+        formData.province
+      );
       onConfirm(formData);
     } catch (error) {
       console.error(error);
@@ -44,6 +92,39 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
   const inputClass = "w-full border border-gray-300 rounded-full px-5 py-1.5 text-base outline-none focus:border-blue-600 transition-all font-medium text-gray-800";
   const labelClass = "text-lg font-bold text-gray-900 min-w-[130px]";
   const subLabelClass = "text-[15px] font-bold italic text-gray-900 min-w-[150px] text-right pr-4";
+
+  const handleProvinceChange = async (value: string) => {
+    setSelectedProvinceCode(value);
+    setSelectedWardCode("");
+
+    const selected = provinces.find((p) => p.code.toString() === value);
+    setFormData((prev) => ({
+      ...prev,
+      province: selected ? selected.name : "",
+      ward: "",
+    }));
+
+    if (!value) {
+      setWards([]);
+      return;
+    }
+
+    try {
+      const res = await locationService.getWards(Number(value));
+      setWards(res.data || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleWardChange = (value: string) => {
+    setSelectedWardCode(value);
+    const selected = wards.find((w) => w.code.toString() === value);
+    setFormData((prev) => ({
+      ...prev,
+      ward: selected ? selected.name : "",
+    }));
+  };
 
   return (
     <div className={`${jost.className} fixed inset-0 z-[100] flex items-center justify-center p-4`}>
@@ -105,8 +186,19 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
             <div className="flex items-center gap-3">
               <label className={subLabelClass}>Province/City</label>
               <div className="relative w-full">
-                <select className={`${inputClass} appearance-none cursor-pointer bg-transparent`}>
-                  <option>{formData.province}</option>
+                <select
+                  className={`${inputClass} appearance-none cursor-pointer bg-transparent`}
+                  value={selectedProvinceCode}
+                  onChange={(e) => handleProvinceChange(e.target.value)}
+                >
+                  <option value="" disabled>
+                    {formData.province || "Select province"}
+                  </option>
+                  {provinces.map((province) => (
+                    <option key={province.code} value={province.code.toString()}>
+                      {province.name}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-900 pointer-events-none" size={20} strokeWidth={3} />
               </div>
@@ -115,8 +207,20 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
             <div className="flex items-center gap-3">
               <label className={subLabelClass}>Ward/Commune</label>
               <div className="relative w-full">
-                <select className={`${inputClass} appearance-none cursor-pointer bg-transparent`}>
-                  <option>{formData.ward}</option>
+                <select
+                  className={`${inputClass} appearance-none cursor-pointer bg-transparent`}
+                  value={selectedWardCode}
+                  onChange={(e) => handleWardChange(e.target.value)}
+                  disabled={!selectedProvinceCode}
+                >
+                  <option value="" disabled>
+                    {formData.ward || "Select ward"}
+                  </option>
+                  {wards.map((ward) => (
+                    <option key={ward.code} value={ward.code.toString()}>
+                      {ward.name}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-900 pointer-events-none" size={20} strokeWidth={3} />
               </div>

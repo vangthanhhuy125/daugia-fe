@@ -31,7 +31,7 @@ export const RevenueChart = () => {
     auctionService.getMyAuctions(0, 999)
       .then(res => {
         const auctionList = res.data?.content || [];
-        const completedAuctions = auctionList.filter((item: any) => item.status === "COMPLETED");
+        const completedAuctions = auctionList.filter((item: any) => item.status === "ENDED");
 
         const revenueByDate: Record<string, number> = {};
         const revenueByCategory: Record<string, number> = {};

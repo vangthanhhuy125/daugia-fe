@@ -37,7 +37,7 @@ export default function BidderAuctionsPage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await userService.getProfile("");
+        const res = await userService.getMe();
         setProfile(res.data);
       } catch (error) {
         console.error(error);
@@ -49,19 +49,20 @@ export default function BidderAuctionsPage() {
   useEffect(() => {
     const fetchAuctions = async () => {
       try {
-        const res = await auctionService.getMyAuctions(0, 100);
+        const res = await auctionService.searchPublic({ size: 100 });
         const mapped = res.data.content.map((item: any) => {
-          let s = "Watching";
-          if (item.status === "UPCOMING") s = "Participating";
-          if (item.status === "ENDED") s = "History";
+          const backendStatus = item.status;
+          let displayStatus = "Watching";
+          if (backendStatus === "ACTIVE") displayStatus = "Participating";
+          if (backendStatus === "ENDED") displayStatus = "History";
 
           let label = "Starting Bid";
-          if (s === "Participating") label = "Current Bid";
-          if (s === "History") label = "Final Bid";
+          if (displayStatus === "Participating") label = "Current Bid";
+          if (displayStatus === "History") label = "Final Bid";
 
-          const rawDate = s === "History" ? item.biddingEndTime : item.biddingStartTime;
-          const dateStr = rawDate ? new Date(rawDate).toLocaleString('en-GB') : "N/A";
-          const priceVal = item.currentPrice || item.startingPrice || 0;
+          const rawDate = backendStatus === "ENDED" ? item.biddingEndTime : item.biddingStartTime;
+          const dateStr = rawDate ? new Date(rawDate).toLocaleString("en-GB") : "N/A";
+          const priceVal = item.startingPrice || 0;
 
           return {
             id: item.id.toString(),
@@ -70,10 +71,10 @@ export default function BidderAuctionsPage() {
             time: dateStr,
             price: `${priceVal.toLocaleString()} VND`,
             priceLabel: label,
-            image: item.images?.[0]?.imageUrl || item.thumbnailUrl,
-            status: s,
-            isLeading: item.isLeading || false, 
-            result: s === "History" ? (item.isWinner ? "won" : "lost") : undefined,
+            image: item.thumbnailUrl || "/laptop-image.png",
+            status: displayStatus,
+            isLeading: false,
+            result: displayStatus === "History" ? "lost" : undefined,
             rawDate: rawDate
           };
         });

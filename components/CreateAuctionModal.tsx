@@ -64,6 +64,14 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
     }
   };
 
+  const formatLocalDateTime = (date: Date) => {
+    const pad = (value: number) => value.toString().padStart(2, "0");
+    return [
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+      `T${pad(date.getHours())}:${pad(date.getMinutes())}:00`,
+    ].join("");
+  };
+
   const handleCreate = async () => {
     try {
       if (!startDate || !endDate || !startHour || !startMin || !endHour || !endMin) return;
@@ -80,9 +88,9 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
         startingPrice: Number(startingPrice),
         bidIncrement: Number(bidIncrement),
         buyNowPrice: buyNowPrice ? Number(buyNowPrice) : undefined,
-        categoryId: Number(selectedCategoryId),
-        biddingStartTime: fullStartDate.toISOString(),
-        biddingEndTime: fullEndDate.toISOString()
+        categoryId: selectedCategoryId,
+        biddingStartTime: formatLocalDateTime(fullStartDate),
+        biddingEndTime: formatLocalDateTime(fullEndDate)
       };
 
       const allFiles: File[] = [];

@@ -14,7 +14,7 @@ const jost = Jost({
 interface SectionProps {
   id?: string;
   title: string;
-  statusFilter: "UPCOMING" | "ACTIVE" | "ENDED";
+  statusFilter: "APPROVED" | "ACTIVE" | "ENDED";
 }
 
 export const AuctionSection = ({ id, title, statusFilter }: SectionProps) => {
@@ -34,6 +34,9 @@ export const AuctionSection = ({ id, title, statusFilter }: SectionProps) => {
           } else if (statusFilter === "ENDED") {
             label = "Ended";
             priceLabel = "Final Bid";
+          } else if (statusFilter === "APPROVED") {
+            label = "Upcoming";
+            priceLabel = "Starting Price";
           }
 
           const dateStr = item.biddingStartTime ? new Date(item.biddingStartTime).toLocaleString('en-GB') : "";
@@ -81,7 +84,7 @@ export const AuctionSection = ({ id, title, statusFilter }: SectionProps) => {
 
         <div className="flex justify-center md:justify-start mt-10">
           <Link
-            href={`/list-auction?status=${statusFilter === 'UPCOMING' ? 'Upcoming' : statusFilter === 'ACTIVE' ? 'Live' : 'Ended'}`}
+            href={`/list-auction?status=${statusFilter === 'APPROVED' ? 'Upcoming' : statusFilter === 'ACTIVE' ? 'Live' : 'Ended'}`}
             className="px-6 py-2 border-2 border-[#ce2029] text-[#ce2029] text-sm md:text-base font-bold rounded-md hover:bg-red-50 transition tracking-wider"
           >
             View All

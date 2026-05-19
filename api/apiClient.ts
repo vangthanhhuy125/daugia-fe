@@ -6,6 +6,7 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 15000,
 });
 
 apiClient.interceptors.request.use(
@@ -57,7 +58,7 @@ apiClient.interceptors.response.use(
       }
     }
 
-    return Promise.reject(error.response?.data || error.message);
+    return Promise.reject(error.response?.data || { message: error.message });
   }
 );
 

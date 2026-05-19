@@ -18,7 +18,7 @@ const Footer = () => {
 
   useEffect(() => {
     if (isLoggedIn) {
-      userService.getProfile("")
+      userService.getMe()
         .then(res => {
           if (res.data?.role?.name) {
             setCurrentRole(res.data.role.name.toLowerCase());

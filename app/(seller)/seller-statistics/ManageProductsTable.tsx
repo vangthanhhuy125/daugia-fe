@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { ChevronDown, RotateCcw, Search } from "lucide-react";
 import { auctionService } from "@/services/auctionService";
-import { biddingService } from "@/services/biddingService";
 
 export const ManageProductsTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -15,37 +14,24 @@ export const ManageProductsTable = () => {
 
   useEffect(() => {
     auctionService.getMyAuctions(0, 999)
-      .then(async (res) => {
+      .then((res) => {
         const auctionList = res.data?.content || [];
-
-        const enrichedPromises = auctionList.map(async (item: any) => {
-          let bidsCount = 0;
-          try {
-            const bidRes = await biddingService.getBidHistory(item.id, 0, 1);
-            bidsCount = bidRes.data?.totalElements || 0;
-          } catch (err) {
-            bidsCount = 0;
-          }
-
-          const isEnded = item.status === "COMPLETED";
+        const mapped = auctionList.map((item: any) => {
+          const isEnded = item.status === "ENDED";
           const revenue = isEnded ? (item.buyNowPrice || item.startingPrice || 0) : 0;
-          const type = item.buyNowPrice ? "Buy now" : "Auction";
-
           return {
             id: item.id,
             name: item.productName || "No Name",
             category: item.categoryName || "Uncategorized",
             status: item.status || "UNKNOWN",
-            date: item.biddingEndTime ? new Date(item.biddingEndTime).toLocaleDateString('en-GB') : "-",
-            bids: bidsCount,
-            type: bidsCount > 0 ? "Auction" : type,
-            revenue: revenue,
-            rawDate: item.biddingEndTime ? new Date(item.biddingEndTime).getTime() : 0
+            date: item.biddingEndTime ? new Date(item.biddingEndTime).toLocaleDateString("en-GB") : "-",
+            bids: 0,
+            type: item.buyNowPrice ? "Buy now" : "Auction",
+            revenue,
+            rawDate: item.biddingEndTime ? new Date(item.biddingEndTime).getTime() : 0,
           };
         });
-
-        const enrichedData = await Promise.all(enrichedPromises);
-        setProducts(enrichedData);
+        setProducts(mapped);
       })
       .catch(console.error);
   }, []);
@@ -127,7 +113,7 @@ export const ManageProductsTable = () => {
           <option>Upcoming</option>
           <option>Live</option>
           <option>Ended</option>
-          <option>COMPLETED</option>
+          <option>ENDED</option>
         </select>
 
         <RotateCcw 

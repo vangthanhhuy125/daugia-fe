@@ -18,7 +18,7 @@ const HistoryAuctionModal = ({ isOpen, onClose, auctionId }: HistoryAuctionModal
 
   useEffect(() => {
     if (isOpen && auctionId) {
-      auctionService.getByIdPublic(Number(auctionId))
+      auctionService.getByIdPublic(auctionId)
         .then(res => setAuctionDetail(res.data))
         .catch(err => console.error(err));
 

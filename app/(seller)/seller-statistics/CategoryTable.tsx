@@ -18,7 +18,7 @@ export const CategoryTable = () => {
           if (!acc[catName]) {
             acc[catName] = { category: catName, sold: 0, revenue: 0 };
           }
-          if (item.status === "COMPLETED") {
+          if (item.status === "ENDED") {
             acc[catName].sold += 1;
             acc[catName].revenue += (item.buyNowPrice || item.startingPrice || 0);
           }

@@ -13,7 +13,7 @@ export const Sidebar = () => {
   const [profileRole, setProfileRole] = useState<string | null>(null);
 
   useEffect(() => {
-    userService.getProfile("")
+    userService.getMe()
       .then(res => {
         if (res.data?.role?.name) {
           setProfileRole(res.data.role.name.toLowerCase());

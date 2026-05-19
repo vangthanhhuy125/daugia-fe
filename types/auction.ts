@@ -53,7 +53,7 @@ export interface AuctionCreateRequest {
   startingPrice: number;
   bidIncrement: number;
   buyNowPrice?: number;
-  categoryId: number;
+  categoryId: string;
   biddingStartTime: string; 
   biddingEndTime: string;
 }

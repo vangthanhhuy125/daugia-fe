@@ -13,6 +13,7 @@ import {
   PieChart, Pie, Cell, Legend 
 } from "recharts";
 import { userService } from "@/services/userService";
+import { auctionService } from "@/services/auctionService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -32,7 +33,7 @@ export default function BidderStatisticsPage() {
   const [resultsData, setResultsData] = useState<any[]>([]);
 
   useEffect(() => {
-    userService.getProfile("")
+    userService.getMe()
       .then(res => {
         if (res.data) {
           setUserName(res.data.fullName || "");
@@ -41,14 +42,18 @@ export default function BidderStatisticsPage() {
       })
       .catch(console.error);
 
-    setBidsData([]);
-    setResultsData([]);
-    setStats({
-      totalBids: 0,
-      participated: 0,
-      won: 0,
-      totalSpent: 0
-    });
+    auctionService.searchPublic({ size: 100 })
+      .then(() => {
+        setStats({
+          totalBids: 0,
+          participated: 0,
+          won: 0,
+          totalSpent: 0,
+        });
+        setBidsData([]);
+        setResultsData([]);
+      })
+      .catch(console.error);
   }, [timeRange]);
 
   return (

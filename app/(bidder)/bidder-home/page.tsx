@@ -12,7 +12,7 @@ export default function HomePage() {
         <Hero />
         
         <div className="pb-16 space-y-4">
-          <AuctionSection id="upcoming-auctions" title="Upcoming Auctions" statusFilter="UPCOMING" />
+          <AuctionSection id="upcoming-auctions" title="Upcoming Auctions" statusFilter="APPROVED" />
           <AuctionSection title="Ongoing Auctions" statusFilter="ACTIVE" />
           <AuctionSection title="Auction Results" statusFilter="ENDED" />
         </div>

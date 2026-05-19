@@ -19,24 +19,16 @@ export default function AdminHomePage() {
   });
 
   useEffect(() => {
-    const fetchAdminProfile = async () => {
-      try {
-        const res = await userService.getAllUsers(0, 1);
-        const currentUserId = localStorage.getItem("userId");
-        if (currentUserId) {
-          const detailRes = await userService.getUserById(currentUserId);
-          if (detailRes.data) {
-            setAdminData({
-              fullname: detailRes.data.fullName,
-              role: detailRes.data.role?.name || "",
-            });
-          }
+    userService.getMe()
+      .then(res => {
+        if (res.data) {
+          setAdminData({
+            fullname: res.data.fullName || "Admin",
+            role: res.data.role?.name || "ADMIN",
+          });
         }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    fetchAdminProfile();
+      })
+      .catch(console.error);
   }, []);
 
   return (

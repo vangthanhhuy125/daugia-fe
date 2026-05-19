@@ -31,7 +31,7 @@ export const LiveModal = ({ isOpen, onClose, auctionId }: LiveModalProps) => {
 
   useEffect(() => {
     if (isOpen && auctionId) {
-      auctionService.getByIdPublic(Number(auctionId))
+      auctionService.getByIdPublic(auctionId)
         .then(res => setAuctionDetail(res.data))
         .catch(err => console.error(err));
 

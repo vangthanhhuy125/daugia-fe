@@ -7,6 +7,7 @@ import { Jost } from "next/font/google";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { authService } from "@/services/authService";
+import { decodeJwt } from "@/utils/auth";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -34,6 +35,11 @@ export default function LoginPage() {
       localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);
 
+      const payload = decodeJwt(access_token);
+      if (payload?.sub) {
+        localStorage.setItem("userId", payload.sub);
+      }
+
       const normalizedRole = role.toLowerCase();
       login({ role: normalizedRole, token: access_token });
 
@@ -45,7 +51,7 @@ export default function LoginPage() {
         router.push("/bidder-home");
       }
     } catch (err: any) {
-      alert(err.message || "Invalid credentials");
+      alert(err.message || err.data?.message || "Invalid credentials");
     }
   };
 

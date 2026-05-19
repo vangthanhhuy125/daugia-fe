@@ -30,7 +30,7 @@ export const EndedModal = ({ isOpen, onClose, auctionId }: EndedModalProps) => {
 
   useEffect(() => {
     if (isOpen && auctionId) {
-      auctionService.getByIdPublic(Number(auctionId))
+      auctionService.getByIdPublic(auctionId)
         .then(res => setAuctionDetail(res.data))
         .catch(err => console.error(err));
     } else {

@@ -44,13 +44,15 @@ export default function SellerAuctionsPage() {
       try {
         const res = await auctionService.getMyAuctions(0, 100);
         const mapped = res.data.content.map((item: any) => {
-          let s = "Upcoming";
-          if (item.status === "ACTIVE") s = "Live";
-          if (item.status === "ENDED" || item.status === "REJECTED") s = "Ended";
+          let displayStatus = "Upcoming";
+          if (item.status === "PENDING") displayStatus = "Upcoming";
+          if (item.status === "APPROVED") displayStatus = "Upcoming";
+          if (item.status === "ACTIVE") displayStatus = "Live";
+          if (item.status === "ENDED" || item.status === "REJECTED") displayStatus = "Ended";
 
           let label = "Starting Bid";
-          if (s === "Live") label = "Current Bid";
-          if (s === "Ended") label = "Final Bid";
+          if (displayStatus === "Live") label = "Current Bid";
+          if (displayStatus === "Ended") label = "Final Bid";
 
           const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : "";
 
@@ -62,7 +64,7 @@ export default function SellerAuctionsPage() {
             price: `${item.startingPrice?.toLocaleString()} VND`,
             priceLabel: label,
             image: item.thumbnailUrl || "/laptop-image.png",
-            status: s
+            status: displayStatus
           };
         });
         setAllAuctions(mapped);
@@ -290,14 +292,17 @@ export default function SellerAuctionsPage() {
       <UpcomingModal 
         isOpen={selectedModalType === "upcoming"} 
         onClose={closeDetailsModal} 
+        auctionId={selectedAuctionId}
       />
       <LiveModal 
         isOpen={selectedModalType === "live"} 
         onClose={closeDetailsModal} 
+        auctionId={selectedAuctionId}
       />
       <EndedModal 
         isOpen={selectedModalType === "ended"} 
         onClose={closeDetailsModal} 
+        auctionId={selectedAuctionId}
       />
       
       <Footer />

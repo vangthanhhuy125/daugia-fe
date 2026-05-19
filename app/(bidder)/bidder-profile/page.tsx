@@ -30,7 +30,7 @@ export default function UserProfilePage() {
   const [avatar, setAvatar] = useState("/avatar.jfif");
 
   useEffect(() => {
-    userService.getProfile("")
+    userService.getMe()
       .then(res => {
         if (res.data) {
           setUserData({
