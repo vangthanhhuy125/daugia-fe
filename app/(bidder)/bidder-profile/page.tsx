@@ -38,12 +38,16 @@ export default function UserProfilePage() {
             email: res.data.email || "",
             phone: res.data.phone || "",
             street: res.data.street || "",
-            province: res.data.province ||"",
-            ward: res.data.ward ||""
+            province: res.data.province || "",
+            ward: res.data.ward || ""
           });
-          if (res.data.role?.name) {
-            setDisplayRole(res.data.role.name);
+
+          if (res.data.role) {
+            const rawRole = typeof res.data.role === 'string' ? res.data.role : (res.data.role?.name || "Bidder");
+            const formattedRole = rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase();
+            setDisplayRole(formattedRole);
           }
+
           if (res.data.createdAt) {
             setMemberSince(new Date(res.data.createdAt).getFullYear().toString());
           }
@@ -104,12 +108,19 @@ export default function UserProfilePage() {
         onSubmit={(val) => console.log("Feedback:", val)}
       />
 
-      <EditProfileModal 
+      <EditProfileModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         initialData={userData}
         onConfirm={(newData) => {
-          setUserData(newData);
+          setUserData({
+            fullname: newData.fullname,
+            email: newData.email,
+            phone: newData.phone,
+            street: newData.street,
+            province: newData.province,
+            ward: newData.ward,
+          });
           setIsEditModalOpen(false);
         }}
       />

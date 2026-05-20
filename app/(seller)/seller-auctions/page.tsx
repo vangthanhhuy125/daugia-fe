@@ -18,11 +18,13 @@ import { UpcomingModal } from "./UpcomingModal";
 import { LiveModal } from "./LiveModal";
 import { EndedModal } from "./EndedModal";
 import { auctionService } from "@/services/auctionService";
+import { userService } from "@/services/userService";
+import { UserDto } from "@/types/user";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
 export default function SellerAuctionsPage() {
-  const [activeTab, setActiveTab] = useState<"Upcoming" | "Live" | "Ended">("Upcoming");
+  const [activeTab, setActiveTab] = useState<"Upcoming & Pending" | "Live" | "Ended & Rejected">("Upcoming & Pending");
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -34,45 +36,52 @@ export default function SellerAuctionsPage() {
   const [category, setCategory] = useState("All category");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserDto | null>(null);
 
-  const tabs = ["Upcoming", "Live", "Ended"];
+  const tabs = ["Upcoming & Pending", "Live", "Ended & Rejected"];
   
   const [allAuctions, setAllAuctions] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchAuctions = async () => {
-      try {
-        const res = await auctionService.getMyAuctions(0, 100);
-        const mapped = res.data.content.map((item: any) => {
-          let displayStatus = "Upcoming";
-          if (item.status === "PENDING") displayStatus = "Upcoming";
-          if (item.status === "APPROVED") displayStatus = "Upcoming";
-          if (item.status === "ACTIVE") displayStatus = "Live";
-          if (item.status === "ENDED" || item.status === "REJECTED") displayStatus = "Ended";
-
-          let label = "Starting Bid";
-          if (displayStatus === "Live") label = "Current Bid";
-          if (displayStatus === "Ended") label = "Final Bid";
-
-          const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : "";
-
-          return {
-            id: item.id.toString(),
-            title: item.productName,
-            category: item.categoryName || "Electronics",
-            time: dateStr ? `${dateStr} 00:00:00` : "10/3/2026 09:00:00",
-            price: `${item.startingPrice?.toLocaleString()} VND`,
-            priceLabel: label,
-            image: item.thumbnailUrl || "/laptop-image.png",
-            status: displayStatus
-          };
-        });
-        setAllAuctions(mapped);
-      } catch (error) {
-        console.error(error);
+  const fetchProfileAndAuctions = async () => {
+    try {
+      const profileRes = await userService.getMe();
+      if (profileRes?.data) {
+        setCurrentUser(profileRes.data);
       }
-    };
-    fetchAuctions();
+
+      const res = await auctionService.getMyAuctions(0, 100);
+      const mapped = res.data.content.map((item: any) => {
+        let displayStatus = "Upcoming & Pending";
+        if (item.status === "PENDING") displayStatus = "Upcoming & Pending";
+        if (item.status === "APPROVED") displayStatus = "Upcoming & Pending";
+        if (item.status === "ACTIVE") displayStatus = "Live";
+        if (item.status === "ENDED" || item.status === "REJECTED") displayStatus = "Ended & Rejected";
+
+        let label = "Starting Bid";
+        if (displayStatus === "Live") label = "Current Bid";
+        if (displayStatus === "Ended & Rejected") label = "Winning Bid";
+
+        const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : "";
+
+        return {
+          id: item.id.toString(),
+          title: item.productName,
+          category: item.categoryName || "Electronics",
+          time: dateStr ? `${dateStr} 00:00:00` : "10/3/2026 09:00:00",
+          price: `${item.startingPrice?.toLocaleString()} VND`,
+          priceLabel: label,
+          image: item.thumbnailUrl || "/laptop-image.png",
+          status: displayStatus
+        };
+      });
+      setAllAuctions(mapped);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfileAndAuctions();
   }, []);
 
   const handleReset = () => {
@@ -146,13 +155,12 @@ export default function SellerAuctionsPage() {
         </nav>
 
         <ProfileHeader 
-          name="Nguyen Van Huy"
-          role="Seller"
-          avatarUrl="/avatar.jfif"
+          name={currentUser?.fullName || "Loading..."}
+          role={currentUser?.role?.name || "Seller"}
+          avatarUrl={currentUser?.avatarUrl || "/avatar.jfif"}
           bannerUrl="/banner.jpg"
           onFeedbackClick={() => setIsFeedbackOpen(true)}
           onEditClick={() => setIsEditOpen(true)}
-          onCreateAuctionClick={() => setIsCreateModalOpen(true)}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mt-12 px-4">
@@ -164,7 +172,7 @@ export default function SellerAuctionsPage() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab as any)}
-                  className={`px-10 py-3 rounded-full text-sm font-[900] transition-all ${
+                  className={`px-6 py-3 rounded-full text-sm font-[900] transition-all ${
                     activeTab === tab 
                     ? "bg-[#e0e0e0] text-gray-900 shadow-inner" 
                     : "bg-[#f5f5f5] text-gray-400 hover:bg-gray-200"
@@ -262,7 +270,7 @@ export default function SellerAuctionsPage() {
                     image={item.image}
                     price={item.price}
                     priceLabel={item.priceLabel}
-                    status={item.status.toLowerCase() as any}
+                    status={item.status === "Upcoming & Pending" ? "upcoming" : item.status === "Live" ? "live" : "ended"}
                     onDetailsClick={handleDetailsClick}
                   />
                 ))
@@ -281,8 +289,46 @@ export default function SellerAuctionsPage() {
       <EditProfileModal 
         isOpen={isEditOpen} 
         onClose={() => setIsEditOpen(false)} 
-        onConfirm={() => setIsEditOpen(false)}
-        initialData={{ fullname: "Nguyen Van Huy", email: "huy@gmail.com", phone: "123", street: "96", province: "HCM", ward: "Thu Duc" }}
+        onConfirm={async (newData) => {
+          try {
+            const translateAddress = (text: string) => {
+              if (!text) return "";
+              return text
+                .replace(/Thành phố/g, "City")
+                .replace(/Tỉnh/g, "Province")
+                .replace(/Quận|Huyện/g, "District")
+                .replace(/Phường|Xã/g, "Ward")
+                .replace(/Đường/g, "Street");
+            };
+
+            const translatedStreet = translateAddress(newData.street);
+            const translatedProvince = translateAddress(newData.province);
+            const translatedWard = translateAddress(newData.ward);
+
+            const service = userService as any;
+            if (typeof service.updateProfile === "function") {
+              await service.updateProfile({
+                fullName: newData.fullname,
+                phone: newData.phone,
+                street: translatedStreet,
+                province: translatedProvince,
+                ward: translatedWard,
+              });
+            }
+            await fetchProfileAndAuctions();
+            setIsEditOpen(false);
+          } catch (error) {
+            console.error(error);
+          }
+        }}
+        initialData={{ 
+          fullname: currentUser?.fullName || "", 
+          email: currentUser?.email || "", 
+          phone: currentUser?.phone || "", 
+          street: currentUser?.street || "", 
+          province: currentUser?.province || "", 
+          ward: currentUser?.ward || "" 
+        }}
       />
       <CreateAuctionModal 
         isOpen={isCreateModalOpen} 

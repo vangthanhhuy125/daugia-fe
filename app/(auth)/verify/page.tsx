@@ -18,6 +18,7 @@ function VerifyOTPContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
+  const type = searchParams.get("type");
   const { login } = useAuth();
 
   const [timer, setTimer] = useState(180);
@@ -103,31 +104,41 @@ function VerifyOTPContent() {
     setIsLoading(true);
 
     try {
-      const response = await authService.verifyOtp({
-        email,
-        otp: otpCode,
-        purpose: "REGISTRATION",
-      });
-
-      const { access_token, refresh_token, role } = response.data;
-
-      localStorage.setItem("accessToken", access_token);
-      localStorage.setItem("refreshToken", refresh_token);
-
-      const payload = decodeJwt(access_token);
-      if (payload?.sub) {
-        localStorage.setItem("userId", payload.sub);
-      }
-
-      const normalizedRole = role.toLowerCase();
-      login({ role: normalizedRole, token: access_token });
-
-      if (normalizedRole === "admin") {
-        router.push("/admin-home");
-      } else if (normalizedRole === "seller") {
-        router.push("/seller-profile");
+      if (type === "forgot") {
+        await authService.verifyOtp({
+          email,
+          otp: otpCode,
+          purpose: "FORGOT_PASSWORD",
+        });
+        
+        router.push(`/create-password?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otpCode)}`);
       } else {
-        router.push("/bidder-home");
+        const response = await authService.verifyOtp({
+          email,
+          otp: otpCode,
+          purpose: "REGISTRATION",
+        });
+
+        const { access_token, refresh_token, role } = response.data;
+
+        localStorage.setItem("accessToken", access_token);
+        localStorage.setItem("refreshToken", refresh_token);
+
+        const payload = decodeJwt(access_token);
+        if (payload?.sub) {
+          localStorage.setItem("userId", payload.sub);
+        }
+
+        const normalizedRole = role.toLowerCase();
+        login({ role: normalizedRole, token: access_token });
+
+        if (normalizedRole === "admin") {
+          router.push("/admin-home");
+        } else if (normalizedRole === "seller") {
+          router.push("/seller-profile");
+        } else {
+          router.push("/bidder-home");
+        }
       }
     } catch (err: any) {
       setError(err.message || err.data?.message || "Invalid OTP code.");
@@ -138,7 +149,6 @@ function VerifyOTPContent() {
 
   return (
     <div className={`${jost.className} flex min-h-screen bg-white`}>
-      
       <div className="hidden lg:block lg:w-1/3 relative">
         <Image
           src="/nen.jpg" 
@@ -151,7 +161,6 @@ function VerifyOTPContent() {
       </div>
 
       <div className="w-full lg:w-2/3 flex flex-col justify-center px-8 md:px-20 lg:px-32 py-10 relative">
-        
         <div className="absolute top-14 left-12 md:left-24 lg:left-32">
           <Link href="/home" className="flex items-center gap-2 group">
             <div className="relative w-10 h-10 transition-transform group-hover:rotate-12">

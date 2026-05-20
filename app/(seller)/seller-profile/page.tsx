@@ -66,14 +66,13 @@ export default function SellerProfilePage() {
           <h1 className="text-3xl font-[900] text-gray-900">User Profile</h1>
           <p className="text-sm font-medium text-gray-400">Home {'>'} User Profile</p>
         </div>
-        <ProfileHeader
+        <ProfileHeader 
           name={userData.fullname}
           role="Seller"
           avatarUrl={avatar}
           bannerUrl="/banner.jpg"
           onFeedbackClick={() => setIsFeedbackOpen(true)}
           onEditClick={() => setIsEditModalOpen(true)}
-          onCreateAuctionClick={() => setIsCreateModalOpen(true)}
         />
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mt-12 px-4">
           <Sidebar />
@@ -94,7 +93,47 @@ export default function SellerProfilePage() {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         initialData={userData}
-        onConfirm={(newData) => { setUserData(newData); setIsEditModalOpen(false); }}
+        onConfirm={async (newData) => {
+          try {
+            const translateAddress = (text: string) => {
+              if (!text) return "";
+              return text
+                .replace(/Thành phố/g, "City")
+                .replace(/Tỉnh/g, "Province")
+                .replace(/Quận|Huyện/g, "District")
+                .replace(/Phường|Xã/g, "Ward")
+                .replace(/Đường/g, "Street");
+            };
+
+            const translatedStreet = translateAddress(newData.street);
+            const translatedProvince = translateAddress(newData.province);
+            const translatedWard = translateAddress(newData.ward);
+
+            const service = userService as any;
+            if (typeof service.updateProfile === "function") {
+              await service.updateProfile({
+                fullName: newData.fullname,
+                phone: newData.phone,
+                street: translatedStreet,
+                province: translatedProvince,
+                ward: translatedWard,
+              });
+            }
+
+            setUserData({
+              fullname: newData.fullname,
+              email: newData.email,
+              phone: newData.phone,
+              street: translatedStreet,
+              province: translatedProvince,
+              ward: translatedWard,
+            });
+
+          } catch (error) {
+            console.error("Failed to update profile data", error);
+            alert("An error occurred while saving your profile.");
+          }
+        }}
       />
       <CreateAuctionModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
       <Footer />

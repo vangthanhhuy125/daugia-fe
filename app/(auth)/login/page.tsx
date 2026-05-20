@@ -94,13 +94,13 @@ export default function LoginPage() {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 ml-1">
-                Email address or phone number:
+                Email address:
               </label>
               <input
                 type="text"
                 value={identity}
                 onChange={(e) => setIdentity(e.target.value)}
-                placeholder="Enter your email or phone number"
+                placeholder="Enter your email"
                 className="w-full h-14 bg-[#e0e0e0] rounded-full px-6 outline-none focus:ring-2 ring-blue-600 transition"
                 required
               />

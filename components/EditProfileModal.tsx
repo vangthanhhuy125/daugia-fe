@@ -28,6 +28,7 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
   const [wards, setWards] = useState<WardDto[]>([]);
   const [selectedProvinceCode, setSelectedProvinceCode] = useState<string>("");
   const [selectedWardCode, setSelectedWardCode] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -73,7 +74,11 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
 
   if (!isOpen) return null;
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (isSubmitting) return; 
+    setIsSubmitting(true);
+
     try {
       await userService.updateProfile(
         formData.fullname,
@@ -84,8 +89,11 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
         formData.province
       );
       onConfirm(formData);
+      onClose();
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -231,6 +239,7 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
         <div className="flex justify-center mt-10">
           <button
             onClick={handleConfirm}
+            disabled={isSubmitting}
             className="px-14 py-2.5 bg-blue-600 text-white text-xl font-black rounded-full hover:bg-blue-700 transition-all active:scale-95 shadow-md"
           >
             Confirm

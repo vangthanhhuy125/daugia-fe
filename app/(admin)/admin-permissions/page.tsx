@@ -66,9 +66,13 @@ export default function AdminPermissionsPage() {
         const mappedAdmins: AdminData[] = [];
 
         allUsers.forEach((u: any) => {
-          const fallbackDate = new Date().toLocaleDateString('en-GB');
+          const fallbackDate = u.createdAt 
+            ? new Date(u.createdAt).toLocaleDateString('en-GB') 
+            : new Date().toLocaleDateString('en-GB');
 
-          if (u.role?.name === "ADMIN") {
+          const userRole = u.role ? u.role.toUpperCase() : "";
+
+          if (userRole === "ADMIN") {
             mappedAdmins.push({
               id: u.id,
               displayName: u.fullName,
@@ -81,7 +85,7 @@ export default function AdminPermissionsPage() {
               id: u.id,
               name: u.fullName,
               joinDate: fallbackDate,
-              role: u.role?.name === "SELLER" ? "Seller" : "Bidder",
+              role: userRole === "SELLER" ? "Seller" : "Bidder", 
               status: u.locked ? "Blocked" : "Active",
               hasUnlockRequest: false 
             });

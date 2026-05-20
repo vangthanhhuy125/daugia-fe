@@ -26,6 +26,12 @@ function CreateNewPasswordContent() {
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -35,9 +41,16 @@ function CreateNewPasswordContent() {
         newPassword,
         confirmPassword,
       });
-      router.push("/login"); 
+      
+      alert("Password changed successfully!");
+      
+      router.replace("/login");
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 100);
+
     } catch (err: any) {
-      setError(err.message || "Failed to reset password.");
+      setError(err.response?.data?.message || err.message || "Failed to reset password.");
     } finally {
       setIsLoading(false);
     }
@@ -45,7 +58,6 @@ function CreateNewPasswordContent() {
 
   return (
     <div className={`${jost.className} flex min-h-screen bg-white`}>
-      
       <div className="hidden lg:block lg:w-1/3 relative">
         <Image
           src="/nen.jpg" 
@@ -58,7 +70,6 @@ function CreateNewPasswordContent() {
       </div>
 
       <div className="w-full lg:w-2/3 flex flex-col justify-center px-8 md:px-20 lg:px-32 py-10 relative">
-        
         <div className="absolute top-14 left-12 md:left-24 lg:left-32">
           <Link href="/home" className="flex items-center gap-2 group">
             <div className="relative w-10 h-10 transition-transform group-hover:rotate-12">

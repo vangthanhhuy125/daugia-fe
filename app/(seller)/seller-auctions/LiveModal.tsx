@@ -39,7 +39,7 @@ export const LiveModal = ({ isOpen, onClose, auctionId }: LiveModalProps) => {
         .then(res => {
           const mapped = res.data.content.map((item: any, index: number) => ({
             no: index + 1,
-            name: item.bidderEmailMasked || "Anonymous",
+            bidderEmailMasked: item.bidderEmailMasked,
             amount: item.amount,
             time: new Date(item.bidTime).toLocaleString('en-GB'),
             isLeading: index === 0
@@ -148,7 +148,7 @@ export const LiveModal = ({ isOpen, onClose, auctionId }: LiveModalProps) => {
                 <thead>
                   <tr className="bg-gray-50 text-[#d32f2f] font-[900] text-[15px] border-b border-gray-300">
                     <th className="py-4 border-r border-gray-200 w-[10%]">No</th>
-                    <th className="py-4 border-r border-gray-200 w-[30%]">Bidder Name</th>
+                    <th className="py-4 border-r border-gray-200 w-[30%]">Email Masked</th>
                     <th className="py-4 border-r border-gray-200 w-[30%]">
                       <div className="flex items-center justify-center gap-2 cursor-pointer select-none group mx-auto w-fit" onClick={handleSort}>
                         Bid Amount
@@ -166,7 +166,7 @@ export const LiveModal = ({ isOpen, onClose, auctionId }: LiveModalProps) => {
                     sortedBidHistory.map((bid, idx) => (
                       <tr key={idx} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${bid.isLeading ? 'text-blue-700 font-[900] bg-blue-50/20' : 'text-gray-700 font-medium'}`}>
                         <td className="py-4 border-r border-gray-100">{bid.no}</td>
-                        <td className="py-4 border-r border-gray-100">{bid.name}</td>
+                        <td className="py-4 border-r border-gray-100">{bid.bidderEmailMasked}</td>
                         <td className="py-4 border-r border-gray-100">{bid.amount.toLocaleString()} VND</td>
                         <td className="py-4">{bid.time}</td>
                       </tr>

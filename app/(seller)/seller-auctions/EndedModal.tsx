@@ -98,18 +98,22 @@ export const EndedModal = ({ isOpen, onClose, auctionId }: EndedModalProps) => {
                   </p>
                   <div className="border border-gray-300 rounded-none p-3 text-center">
                     <span className="text-xl font-[900] text-[#d32f2f] tracking-wide">
-                      N/A
+                      {auctionDetail?.currentPrice 
+                      ? `${auctionDetail.currentPrice.toLocaleString()} VND` 
+                      : (auctionDetail?.startingPrice 
+                          ? `${auctionDetail.startingPrice.toLocaleString()} VND` 
+                          : "N/A")}
                     </span>
                   </div>
                 </div>
 
                 <div>
                   <p className="text-[#d32f2f] font-bold text-sm mb-1">
-                    Winner:
+                    Winner (Email Masked):
                   </p>
                   <div className="border border-gray-300 rounded-none p-3 text-center">
                     <span className="text-xl font-[900] text-[#d32f2f] tracking-wide">
-                      N/A
+                      {auctionDetail?.bidderEmailMasked || "N/A"}
                     </span>
                   </div>
                 </div>

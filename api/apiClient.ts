@@ -62,4 +62,10 @@ apiClient.interceptors.response.use(
   }
 );
 
+export const paymentService = {
+  createPayment: async (auctionId: string | number): Promise<any> => {
+    return apiClient.post(`/payments/auction/${auctionId}/create`);
+  }
+};
+
 export default apiClient;
