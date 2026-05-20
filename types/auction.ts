@@ -26,12 +26,17 @@ export interface AuctionSummaryResponse {
   id: number;
   productName: string;
   startingPrice: number; 
+  currentPrice?: number;
   buyNowPrice?: number;
   status: AuctionStatus;
   biddingStartTime: string;
   biddingEndTime: string;
+  endTime?: string;
   categoryName: string;
   thumbnailUrl?: string;
+  winnerEmail?: string;
+  paymentStatus?: string;
+  isWinner?: boolean;
   createdAt: string;
 }
 

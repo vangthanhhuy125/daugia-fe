@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@types/sockjs-client": "^1.5.4",
+    "@stomp/stompjs": "^7.0.0",
     "@types/react-datepicker": "^6.2.0",
     "axios": "^1.16.1",
     "framer-motion": "^12.36.0",
@@ -18,7 +20,8 @@
     "react-datepicker": "^9.1.0",
     "react-dom": "19.2.3",
     "react-easy-crop": "^5.5.7",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "sockjs-client": "^1.6.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
