@@ -8,6 +8,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { authService } from "@/services/authService";
 import { decodeJwt } from "@/utils/auth";
+import { X } from "lucide-react"; // Import thêm X icon để làm nút đóng modal
 
 const jost = Jost({
   subsets: ["latin"],
@@ -20,6 +21,9 @@ export default function LoginPage() {
   
   const [identity, setIdentity] = useState("");
   const [password, setPassword] = useState("");
+  
+  // Trạng thái điều khiển ẩn/hiện Modal thông báo Khóa tài khoản
+  const [isLockedModalOpen, setIsLockedModalOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,13 +55,58 @@ export default function LoginPage() {
         router.push("/bidder-home");
       }
     } catch (err: any) {
-      alert(err.message || err.data?.message || "Invalid credentials");
+      // BẪY LỖI: Kiểm tra xem lỗi trả về từ Backend có phải là trạng thái LOCKED không
+      const errorMsg = err.message || err.data?.message || "";
+      const isLockedStatus = err.status === 423 || errorMsg.toLowerCase().includes("lock");
+
+      if (isLockedStatus) {
+        // Nếu dính lỗi khóa, bung ngay modal thông báo lên màn hình thay vì alert thông thường
+        setIsLockedModalOpen(true);
+      } else {
+        alert(errorMsg || "Invalid credentials");
+      }
     }
   };
 
   return (
-    <div className={`${jost.className} flex min-h-screen bg-white`}>
+    <div className={`${jost.className} flex min-h-screen bg-white relative`}>
       
+      {isLockedModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-[32px] p-6 md:p-8 shadow-2xl relative border border-gray-100 flex flex-col items-center animate-in zoom-in-95 duration-200">
+            
+            <button 
+              onClick={() => setIsLockedModalOpen(false)}
+              className="absolute top-5 right-5 text-gray-900 hover:text-gray-500 transition-colors"
+            >
+              <X size={24} strokeWidth={2.5} />
+            </button>
+
+            <div className="text-5xl mb-4">⚠️</div>
+
+            <h2 className="text-[#CE2029] text-2xl font-[900] mb-4 text-center tracking-tight">
+              Account Locked
+            </h2>
+
+            <p className="text-base text-gray-800 text-center leading-relaxed font-medium max-w-sm mb-6">
+              Your account has been temporarily locked due to suspicious activity or policy violations. 
+              Please request to unlock your account or contact support for assistance.
+            </p>
+
+            <button
+              onClick={() => {
+                setIsLockedModalOpen(false);
+                router.push("/unlock-request"); 
+              }}
+              className="w-56 h-12 bg-blue-600 hover:bg-blue-700 text-white font-[900] text-lg rounded-full shadow-lg transition-all active:scale-95 flex items-center justify-center"
+            >
+              Unlock request
+            </button>
+
+          </div>
+        </div>
+      )}
+
       <div className="hidden lg:block lg:w-1/3 relative">
         <Image
           src="/nen.jpg" 

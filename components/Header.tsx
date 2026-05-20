@@ -213,7 +213,7 @@ const Header = () => {
           )}
 
           {role !== 'admin' && (
-            <button onClick={() => setOpen(!open)} className="md:hidden text-gray-800">
+            <button onClick={() => setOpen(!open)} className="md:hidden text-gray-800" suppressHydrationWarning={true}> 
               {open ? <X size={26} /> : <Menu size={26} />}
             </button>
           )}

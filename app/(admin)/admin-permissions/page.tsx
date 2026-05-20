@@ -23,6 +23,7 @@ interface UserData {
   role: "Seller" | "Bidder";
   status: "Active" | "Blocked";
   hasUnlockRequest: boolean;
+  enabled: boolean;
 }
 
 interface AdminData {
@@ -56,16 +57,16 @@ export default function AdminPermissionsPage() {
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [adminToEdit, setAdminToEdit] = useState<AdminFormData | null>(null);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await userService.getAllUsers(0, 1000);
-        const allUsers = res.data.content;
+  const fetchUsers = async () => {
+    try {
+      const res = await userService.getAllUsers(0, 1000);
+      const allUsers = res.data.content || [];
 
-        const mappedUsers: UserData[] = [];
-        const mappedAdmins: AdminData[] = [];
+      const mappedUsers: UserData[] = [];
+      const mappedAdmins: AdminData[] = [];
 
-        allUsers.forEach((u: any) => {
+      await Promise.all(
+        allUsers.map(async (u: any) => {
           const fallbackDate = u.createdAt 
             ? new Date(u.createdAt).toLocaleDateString('en-GB') 
             : new Date().toLocaleDateString('en-GB');
@@ -81,24 +82,59 @@ export default function AdminPermissionsPage() {
               _raw: u
             });
           } else {
+            let isLockedByLog = false;
+            let userHasUnlockRequest = false; 
+            
+            try {
+              const logRes = await userService.getAccountLogs(u.id, 0, 50);
+              const logs = logRes.data?.content || [];
+              
+              if (logs.length > 0) {
+                if (logs[0].action === "LOCK") {
+                  isLockedByLog = true;
+                }
+                
+                const hasRequestInLog = logs.some((log: any) => {
+                  const actionStr = String(log.action || "").toUpperCase();
+                  const reasonStr = String(log.reason || "").toUpperCase();
+                  return actionStr === "REQUEST_UNLOCK" || reasonStr.includes("REQUEST_UNLOCK");
+                });
+
+                if (hasRequestInLog) {
+                  userHasUnlockRequest = true;
+                }
+              }
+            } catch (err) {
+              console.error("Failed to check logs for user: " + u.id, err);
+            }
+
+            const isUserBlocked = u.enabled === false || isLockedByLog;
+
+            if (isUserBlocked) {
+              userHasUnlockRequest = true; 
+            }
+
             mappedUsers.push({
               id: u.id,
               name: u.fullName,
               joinDate: fallbackDate,
               role: userRole === "SELLER" ? "Seller" : "Bidder", 
-              status: u.locked ? "Blocked" : "Active",
-              hasUnlockRequest: false 
+              status: isUserBlocked ? "Blocked" : "Active",
+              hasUnlockRequest: userHasUnlockRequest, 
+              enabled: u.enabled 
             });
           }
-        });
+        })
+      );
 
-        setUsers(mappedUsers);
-        setAdmins(mappedAdmins);
-      } catch (error) {
-        console.error("Failed to fetch users", error);
-      }
-    };
+      setUsers(mappedUsers);
+      setAdmins(mappedAdmins);
+    } catch (error) {
+      console.error("Failed to fetch users", error);
+    }
+  };
 
+  useEffect(() => {
     fetchUsers();
   }, []);
 
@@ -207,8 +243,12 @@ export default function AdminPermissionsPage() {
           <div className="md:col-span-9 space-y-8">
             <div className="flex border-b border-gray-200 gap-8">
               {["users", "admins"].map((tab) => (
-                <button key={tab} onClick={() => { setActiveTab(tab as any); handleReset(); }}
-                  className={`pb-3 text-lg font-bold transition-colors border-b-2 capitalize ${activeTab === tab ? "text-[#ce2029] border-[#ce2029]" : "text-gray-400 hover:text-gray-800 border-transparent"}`}>
+                <button 
+                  key={tab} 
+                  onClick={() => { setActiveTab(tab as any); handleReset(); }}
+                  suppressHydrationWarning={true}
+                  className={`pb-3 text-lg font-bold transition-colors border-b-2 capitalize ${activeTab === tab ? "text-[#ce2029] border-[#ce2029]" : "text-gray-400 hover:text-gray-800 border-transparent"}`}
+                >
                   List of {tab}
                 </button>
               ))}
@@ -218,13 +258,14 @@ export default function AdminPermissionsPage() {
               <div className="flex items-center justify-between min-h-[44px]">
                 <div className="flex items-center gap-2">
                   <h3 className="text-[#CE2029] font-bold text-xl">Search</h3>
-                  <button onClick={handleReset} className="p-1 hover:rotate-180 transition-transform duration-500 text-gray-400 hover:text-[#CE2029]"><RotateCcw size={18} strokeWidth={2.5}/></button>
+                  <button onClick={handleReset} suppressHydrationWarning={true} className="p-1 hover:rotate-180 transition-transform duration-500 text-gray-400 hover:text-[#CE2029]"><RotateCcw size={18} strokeWidth={2.5}/></button>
                 </div>
 
                 {activeTab === "admins" && (
                   <button 
                     type="button"
                     onClick={handleCreateAdmin}
+                    suppressHydrationWarning={true}
                     className="relative z-[1] bg-blue-600 !opacity-100 visible text-white px-6 py-2.5 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg active:scale-95 border-none outline-none"
                   >
                     <Plus size={18} strokeWidth={3} className="text-white" /> 
@@ -236,18 +277,19 @@ export default function AdminPermissionsPage() {
               <div className="flex flex-wrap items-end gap-4">
                 <div className="flex-grow min-w-[280px] relative">
                   <input type="text" placeholder="Search by keyword..." value={search} onChange={(e) => setSearch(e.target.value)}
+                    suppressHydrationWarning={true}
                     className="w-full h-12 bg-white border border-gray-200 rounded-xl px-6 outline-none focus:border-[#CE2029] transition-all" />
                 </div>
                 <div className="w-44 space-y-1 custom-datepicker">
                   <label className="text-xs font-bold text-gray-400 ml-2">From Date:</label>
-                  <div className="relative">
+                  <div className="relative" suppressHydrationWarning={true}>
                     <DatePicker selected={startDate} onChange={(d: Date | null) => setStartDate(d)} maxDate={endDate || undefined} placeholderText="dd/mm/yyyy" dateFormat="dd/MM/yyyy" className="w-full h-10 border border-gray-200 rounded-full px-4 outline-none text-sm" />
                     <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
                   </div>
                 </div>
                 <div className="w-44 space-y-1 custom-datepicker">
                   <label className="text-xs font-bold text-gray-400 ml-2">To Date:</label>
-                  <div className="relative">
+                  <div className="relative" suppressHydrationWarning={true}>
                     <DatePicker selected={endDate} onChange={(d: Date | null) => setEndDate(d)} minDate={startDate || undefined} placeholderText="dd/mm/yyyy" dateFormat="dd/MM/yyyy" className="w-full h-10 border border-gray-200 rounded-full px-4 outline-none text-sm" />
                     <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
                   </div>
@@ -313,7 +355,7 @@ export default function AdminPermissionsPage() {
                       {activeTab === "users" && (
                         <td className="py-4">
                           {item.hasUnlockRequest ? (
-                            <div className="flex justify-center">
+                            <div className="flex justify-center animate-pulse">
                               <LockKeyhole size={18} className="text-[#CE2029]" />
                             </div>
                           ) : "-"}
@@ -351,7 +393,10 @@ export default function AdminPermissionsPage() {
         
         <UserDetailsModal
           isOpen={isUserModalOpen}
-          onClose={() => setIsUserModalOpen(false)}
+          onClose={() => {
+            setIsUserModalOpen(false);
+            fetchUsers(); 
+          }}
           user={selectedUser as any}
         />
 

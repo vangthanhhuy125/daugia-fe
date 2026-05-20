@@ -49,7 +49,7 @@ export const userService = {
     if (response?.data) {
       setCachedProfile(response.data);
     }
-    return response;
+    return response.data;
   },
 
   getUserById: (id: string): Promise<ApiResponse<UserDto>> => {

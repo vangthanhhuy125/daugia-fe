@@ -18,8 +18,10 @@ interface UserData {
   email?: string;
   phone?: string;
   address?: string;
+  avatarUrl?: string | null;
   lockReason?: string;
   requestReason?: string;
+  enabled?: boolean;
 }
 
 interface UserDetailsModalProps {
@@ -31,27 +33,61 @@ interface UserDetailsModalProps {
 export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsModalProps) {
   const [view, setView] = useState<"details" | "block-confirm" | "unlock-review">("details");
   const [blockReason, setBlockReason] = useState("");
+  const [unlockRequestContent, setUnlockRequestContent] = useState(""); // Lưu lý do xin mở khóa thực tế của user
   const [unlockResponse, setUnlockResponse] = useState("");
   const [confirmAction, setConfirmAction] = useState<null | "block" | "unlock" | "reject">(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [realUserDetail, setRealUserDetail] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUserActuallyLocked, setIsUserActuallyLocked] = useState(false); 
 
   useEffect(() => {
     if (isOpen && user?.id) {
       setView("details");
       setBlockReason("");
+      setUnlockRequestContent(""); // Reset nội dung đơn
       setUnlockResponse("");
       setConfirmAction(null);
+      setIsSubmitting(false);
+      setIsUserActuallyLocked(false);
 
       userService.getUserById(user.id)
         .then(res => setRealUserDetail(res.data))
         .catch(console.error);
 
-      userService.getAccountLogs(user.id, 0, 1)
+      // Kéo mảng logs về để check mốc thời gian thực tế
+      userService.getAccountLogs(user.id, 0, 50)
         .then(res => {
-          const lastLog = res.data.content?.[0];
-          if (lastLog && lastLog.action === "LOCK") {
-            setBlockReason(lastLog.reason || "");
+          const logs = res.data?.content || [];
+          
+          if (logs.length > 0) {
+            // Tìm bản ghi khóa tài khoản gần nhất của Admin
+            const latestLockLog = logs.find((log: any) => log.action === "LOCK");
+            // Tìm bản ghi gửi đơn xin cứu xét gần nhất của User
+            const latestRequestLog = logs.find(
+              (log: any) => log.action === "REQUEST_UNLOCK" || log.reason?.toLowerCase().includes("request")
+            );
+
+            if (latestLockLog) {
+              setBlockReason(latestLockLog.reason || "No details provided.");
+              setIsUserActuallyLocked(true);
+            }
+
+            // KIỂM TRA MỐC THỜI GIAN LOGIC: 
+            if (latestRequestLog && latestLockLog) {
+              const lockTime = new Date(latestLockLog.createdAt).getTime();
+              const requestTime = new Date(latestRequestLog.createdAt).getTime();
+
+              // Chuẩn bài: Thời gian gửi đơn (requestTime) phải diễn ra SAU thời gian bị khóa (lockTime)
+              if (requestTime > lockTime) {
+                setUnlockRequestContent(latestRequestLog.reason || "I believe my account was locked by mistake.");
+              } else {
+                setUnlockRequestContent(""); // Đơn cũ trước khi bị khóa lần này -> Không tính
+              }
+            } else if (latestRequestLog && !latestLockLog) {
+              // Trường hợp hiếm: Có đơn gửi nhưng ko tìm thấy log lock
+              setUnlockRequestContent(latestRequestLog.reason || "I believe my account was locked by mistake.");
+            }
           }
         })
         .catch(console.error);
@@ -62,37 +98,74 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
 
   if (!isOpen || !user) return null;
 
-  const enriched: UserData = {
-    email: realUserDetail?.email || "N/A",
-    phone: realUserDetail?.phone || "N/A",
-    address: "N/A",
-    lockReason: blockReason || "No details provided.",
-    requestReason: "I believe my account was locked by mistake. I did not engage in any suspicious activity. Please review and help unlock my account.",
-    ...user,
+  const getFullAddress = () => {
+    const source = realUserDetail || user;
+    if (!source) return "N/A";
+
+    if (source.address) return source.address;
+
+    const parts = [
+      source.street,
+      source.ward,
+      source.province
+    ].filter(part => part && part.trim() !== "");
+
+    return parts.length > 0 ? parts.join(", ") : "N/A";
   };
 
-  const isBlocked = enriched.status === "Blocked";
-  const hasUnlock = enriched.hasUnlockRequest;
+  const isBlocked = isUserActuallyLocked; 
+
+  const enriched: UserData = {
+    ...user,
+    name: realUserDetail?.fullName || user.name || "N/A", 
+    email: realUserDetail?.email || user.email || "N/A",
+    phone: realUserDetail?.phone || user.phone || "N/A",
+    avatarUrl: realUserDetail?.avatarUrl !== undefined ? realUserDetail.avatarUrl : user.avatarUrl, 
+    address: getFullAddress(), 
+    status: isBlocked ? "Blocked" : "Active", 
+    lockReason: blockReason || "No details provided.",
+    // Gán dữ liệu đơn xin thực tế sau khi đã kiểm tra mốc thời gian logic thành công
+    requestReason: unlockRequestContent || "N/A - User has not submitted an unlock request yet.",
+  };
+
+  // Nút bấm Unlock Request ở màn hình details chỉ sáng đèn khi user THỰC SỰ có gửi đơn sau giờ khóa
+  const hasUnlock = user.hasUnlockRequest || unlockRequestContent !== "";
 
   const handleBlockClick = () => setView("block-confirm");
   
   const handleConfirmBlock = async () => {
+    if (isSubmitting) return;
     try {
-      await userService.lockUser(user.id, blockReason || "Violated platform terms");
+      setIsSubmitting(true);
+      await userService.lockUser(user.id, blockReason.trim() || "Violated platform terms");
+      alert("User has been locked successfully!");
       onClose();
+      window.location.reload(); 
     } catch (error) {
       console.error(error);
+      alert("Failed to block user. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+      setConfirmAction(null);
     }
   };
   
   const handleCancelBlock = () => setView("details");
 
   const handleUnlockClick = async () => {
+    if (isSubmitting) return;
     try {
-      await userService.unlockUser(user.id, unlockResponse || "Account restored after admin review");
+      setIsSubmitting(true);
+      await userService.unlockUser(user.id, unlockResponse.trim() || "Account restored after admin review");
+      alert("User has been unlocked successfully!");
       onClose();
+      window.location.reload();
     } catch (error) {
       console.error(error);
+      alert("Failed to unlock user.");
+    } finally {
+      setIsSubmitting(false);
+      setConfirmAction(null);
     }
   };
   
@@ -120,7 +193,7 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
   return (
     <div
       className={`${jost.className} fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4`}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget && !isSubmitting) onClose(); }}
     >
       <div className="w-full max-w-[800px] overflow-hidden rounded-3xl bg-white shadow-2xl relative">
 
@@ -129,7 +202,8 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
             <h2 className="text-[22px] font-bold text-gray-900">User Details</h2>
             <button
               onClick={onClose}
-              className="text-gray-900 hover:text-gray-600 transition"
+              disabled={isSubmitting}
+              className="text-gray-900 hover:text-gray-600 transition disabled:opacity-50"
               aria-label="Close modal"
             >
               <X size={28} strokeWidth={2} />
@@ -137,35 +211,39 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
           </div>
 
           <div className="space-y-8 max-h-[68vh] overflow-y-auto pr-2 custom-scrollbar">
+            
             {confirmAction && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 p-6">
-                <div className="w-full max-w-md rounded-[24px] bg-white p-6 shadow-2xl">
-                  <p className="text-lg font-bold text-center text-gray-900 mb-4">Confirm action</p>
-                  <p className="text-sm text-gray-707 mb-6">{getConfirmMessage()}</p>
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40 p-6 rounded-3xl">
+                <div className="w-full max-w-md rounded-[24px] bg-white p-6 shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-150">
+                  <p className="text-lg font-bold text-center text-gray-900 mb-2">Confirm action</p>
+                  <p className="text-sm text-gray-600 text-center mb-6">{getConfirmMessage()}</p>
                   <div className="flex justify-center gap-4">
                     <button
                       onClick={() => setConfirmAction(null)}
-                      className="text-gray-700 text-sm font-semibold px-5 py-2 rounded-full border border-gray-300 bg-white transition-all hover:bg-gray-50"
+                      disabled={isSubmitting}
+                      className="text-gray-700 text-sm font-semibold px-5 py-2 rounded-full border border-gray-300 bg-white transition-all hover:bg-gray-50 disabled:opacity-50"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleActionConfirm}
-                      className="text-white text-sm font-semibold px-5 py-2 rounded-full bg-[#107C41] transition-all hover:bg-[#0d6535]"
+                      disabled={isSubmitting}
+                      className="text-white text-sm font-semibold px-5 py-2 rounded-full bg-[#107C41] transition-all hover:bg-[#0d6535] disabled:opacity-50 min-w-[90px] flex items-center justify-center"
                     >
-                      Confirm
+                      {isSubmitting ? "Saving..." : "Confirm"}
                     </button>
                   </div>
                 </div>
               </div>
             )}
+
             <div className="flex items-start gap-10">
               <div
-                className="rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-amber-400 via-amber-300 to-orange-200"
+                className="rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-amber-400 via-amber-300 to-orange-200 border border-gray-100 shadow-inner"
                 style={{ width: 140, height: 140 }}
               >
-                {realUserDetail?.avatarUrl ? (
-                  <img src={realUserDetail.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                {enriched.avatarUrl ? (
+                  <img src={enriched.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <svg viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full object-cover">
                     <rect width="88" height="88" fill="#F5A623" rx="44" />
@@ -241,19 +319,22 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
                 <textarea
                   value={blockReason}
                   onChange={(e) => setBlockReason(e.target.value)}
+                  disabled={isSubmitting}
                   rows={5}
-                  className="w-full border border-gray-300 rounded-sm p-3 text-[15px] text-gray-800 resize-none outline-none focus:border-gray-500 transition-colors"
+                  className="w-full border border-gray-300 rounded-sm p-3 text-[15px] text-gray-800 resize-none outline-none focus:border-gray-500 transition-colors disabled:bg-gray-50"
                 />
                 <div className="flex justify-center gap-5 pt-4">
                   <button
-                    onClick={() => setConfirmAction("block")}
-                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#CE2029] transition-all hover:bg-[#b71e26] active:scale-95"
+                    onClick={() => setConfirmAction("block")} 
+                    disabled={isSubmitting}
+                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#CE2029] transition-all hover:bg-[#b71e26] active:scale-95 disabled:opacity-50"
                   >
                     Confirm
                   </button>
                   <button
                     onClick={handleCancelBlock}
-                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#FF7F00] transition-all hover:bg-[#e67300] active:scale-95"
+                    disabled={isSubmitting}
+                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#FF7F00] transition-all hover:bg-[#e67300] active:scale-95 disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -270,7 +351,7 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
 
                 <div className="grid grid-cols-[130px_1fr] gap-4 text-[15px] mb-4">
                   <span className="font-bold text-gray-900">Request reason</span>
-                  <span className="text-gray-900">{enriched.requestReason}</span>
+                  <span className="text-gray-900 font-semibold text-blue-700">{enriched.requestReason}</span>
                 </div>
 
                 <div className="grid grid-cols-[130px_1fr] gap-4 text-[15px]">
@@ -278,21 +359,24 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
                   <textarea
                     value={unlockResponse}
                     onChange={(e) => setUnlockResponse(e.target.value)}
+                    disabled={isSubmitting}
                     rows={4}
-                    className="w-full border border-gray-300 rounded-sm p-3 text-[15px] text-gray-800 resize-none outline-none focus:border-gray-500 transition-colors"
+                    className="w-full border border-gray-300 rounded-sm p-3 text-[15px] text-gray-800 resize-none outline-none focus:border-gray-500 transition-colors disabled:bg-gray-50"
                   />
                 </div>
 
                 <div className="flex justify-center gap-5 pt-6">
                   <button
                     onClick={() => setConfirmAction("reject")}
-                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#CE2029] transition-all hover:bg-[#b71e26] active:scale-95"
+                    disabled={isSubmitting}
+                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#CE2029] transition-all hover:bg-[#b71e26] active:scale-95 disabled:opacity-50"
                   >
                     Reject
                   </button>
                   <button
                     onClick={() => setConfirmAction("unlock")}
-                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#0000FF] transition-all hover:bg-blue-800 active:scale-95"
+                    disabled={isSubmitting}
+                    className="text-white text-[15px] font-bold px-10 py-2 rounded-full bg-[#0000FF] transition-all hover:bg-blue-800 active:scale-95 disabled:opacity-50"
                   >
                     Unlock
                   </button>

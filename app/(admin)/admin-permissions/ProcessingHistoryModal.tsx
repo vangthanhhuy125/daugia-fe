@@ -31,21 +31,43 @@ export function ProcessingHistoryModal({ isOpen, onClose, userId }: ProcessingHi
     if (isOpen && userId) {
       userService.getAccountLogs(userId, 0, 100)
         .then(res => {
-          const mapped = res.data.content.map((log: any) => {
+          const content = res.data?.content || [];
+          const mapped = content.map((log: any) => {
             const dateObj = new Date(log.createdAt);
+            
+            let displayAct = "";
+            let displayRole = "";
+
+            if (log.action === 'LOCK') {
+              displayAct = 'Lock user accounts';
+              displayRole = `Admin: ${log.performedBy || "System"}`;
+            } else if (log.action === 'UNLOCK') {
+              displayAct = 'Unlock user accounts';
+              displayRole = `Admin: ${log.performedBy || "System"}`;
+            } else if (log.action === 'REQUEST_UNLOCK' || log.action?.includes('REQUEST')) {
+              displayAct = 'Submitted unlock request';
+              displayRole = 'User (Self)';
+            } else {
+              displayAct = log.action || 'Unknown action';
+              displayRole = log.performedBy ? `Actor: ${log.performedBy}` : 'System';
+            }
+
             return {
               id: log.id,
               time: dateObj.toLocaleTimeString('en-GB'),
               date: dateObj.toLocaleDateString('en-GB'),
-              role: `Admin: ${log.performedBy}`,
-              act: log.action === 'LOCK' ? 'Lock user accounts' : 'Unlock user accounts',
-              reason: log.reason,
+              role: displayRole,
+              act: displayAct,
+              reason: log.reason || "No description provided.",
               timestamp: dateObj.getTime()
             };
           });
           setHistoryData(mapped);
         })
-        .catch(console.error);
+        .catch(err => {
+          console.error("Failed to fetch processing history:", err);
+          setHistoryData([]);
+        });
     } else {
       setHistoryData([]);
     }
@@ -91,7 +113,7 @@ export function ProcessingHistoryModal({ isOpen, onClose, userId }: ProcessingHi
                 <th className="py-0 px-0 w-[140px] border-l border-b border-black font-bold text-center">
                   <button
                     onClick={handleSortDate}
-                    className="w-full h-full flex items-center justify-center gap-2 py-3 hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="w-full h-full flex items-center justify-center gap-2 py-3 hover:bg-slate-50 transition-colors cursor-pointer border-none bg-transparent font-bold text-gray-900"
                   >
                     Date
                     <ArrowUpDown
@@ -113,36 +135,36 @@ export function ProcessingHistoryModal({ isOpen, onClose, userId }: ProcessingHi
               {sortedData.length > 0 ? sortedData.map((record, index) => (
                 <tr
                   key={record.id}
-                  className="border-b border-black last:border-b-0"
+                  className="border-b border-black last:border-b-0 transition-colors hover:bg-gray-50/50"
                 >
                   <td className="py-5 px-2 text-center align-top font-medium">
                     {index + 1}
                   </td>
 
                   <td className="py-5 px-2 text-center border-l border-black align-top">
-                    <div className="flex flex-col">
-                      <span>{record.time}</span>
-                      <span>{record.date}</span>
+                    <div className="flex flex-col text-gray-700">
+                      <span className="font-semibold">{record.time}</span>
+                      <span className="text-sm text-gray-500">{record.date}</span>
                     </div>
                   </td>
 
                   <td className="py-5 px-5 border-l border-black align-top">
                     <div className="flex flex-col gap-2.5">
                       <div className="flex items-start gap-2">
-                        <span className="font-bold w-[120px] shrink-0">Role:</span>
-                        <span>{record.role}</span>
+                        <span className="font-bold w-[120px] shrink-0 text-gray-700">Role:</span>
+                        <span className="text-gray-900 font-medium">{record.role}</span>
                       </div>
 
                       <div className="flex items-start gap-2">
-                        <span className="font-bold w-[120px] shrink-0">Act:</span>
-                        <span>{record.act}</span>
+                        <span className="font-bold w-[120px] shrink-0 text-gray-700">Act:</span>
+                        <span className="text-gray-900 font-medium">{record.act}</span>
                       </div>
 
                       <div className="flex items-start gap-2">
-                        <span className="font-bold w-[120px] shrink-0 leading-tight pt-0.5">
+                        <span className="font-bold w-[120px] shrink-0 leading-tight pt-0.5 text-gray-700">
                           Reason/<br />Response:
                         </span>
-                        <span className="leading-snug pt-0.5 text-gray-800">
+                        <span className="leading-snug pt-0.5 text-gray-600 italic">
                           {record.reason}
                         </span>
                       </div>

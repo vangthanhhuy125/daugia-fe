@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Jost } from "next/font/google";
 import { authService } from "@/services/authService";
+import { userService } from "@/services/userService"; 
 
 const jost = Jost({
   subsets: ["latin"],
@@ -26,13 +27,33 @@ export default function UnlockAccountPage() {
     setIsLoading(true);
 
     try {
-      await (authService as any).unlockAccount({ fullName, email, reason });
-      setSuccess("Your unlock request has been submitted successfully.");
+      const usersRes = await userService.getAllUsers(0, 1000);
+      const allUsers = usersRes.data?.content || [];
+      
+      const matchedUser = allUsers.find(
+        (u: any) => u.email?.toLowerCase().trim() === email.toLowerCase().trim()
+      );
+
+      if (!matchedUser) {
+        throw new Error("This email address does not exist in our system. Please check again!");
+      }
+
+      const finalName = fullName.trim() || matchedUser.fullName || "Unknown User";
+
+      await (authService as any).unlockAccount({ 
+        userId: matchedUser.id, 
+        fullName: finalName, 
+        email: email.trim(), 
+        reason: reason.trim(),
+        action: "REQUEST_UNLOCK" 
+      });
+
+      setSuccess("Your unlock request has been submitted successfully. Admin will review your account soon!");
       setFullName("");
       setEmail("");
       setReason("");
     } catch (err: any) {
-      setError(err.message || "Failed to submit unlock request.");
+      setError(err.message || "Failed to submit unlock request. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -75,13 +96,13 @@ export default function UnlockAccountPage() {
           <h1 className="text-5xl font-[900] text-black mb-10">Unlock Your Account</h1>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl text-red-700 text-sm font-medium">
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl text-red-700 text-sm font-medium animate-in fade-in duration-200">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-xl text-green-700 text-sm font-medium">
+            <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-xl text-green-700 text-sm font-medium animate-in fade-in duration-200">
               {success}
             </div>
           )}
@@ -90,29 +111,30 @@ export default function UnlockAccountPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700 ml-1">
-                  Fullname <span className="text-red-500">(*)</span>:
+                  Fullname:
                 </label>
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   disabled={isLoading}
-                  required
-                  className="w-full h-14 bg-[#e0e0e0] rounded-full px-8 outline-none focus:ring-4 ring-blue-600/20 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all shadow-inner"
+                  placeholder="Enter your full name"
+                  className="w-full h-14 bg-[#e0e0e0] rounded-full px-8 outline-none focus:ring-4 ring-blue-600/20 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all shadow-inner disabled:opacity-50"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700 ml-1">
-                  Email <span className="text-red-500">(*)</span>:
+                  Email Address <span className="text-red-500">(*)</span>:
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
+                  placeholder="Enter your email address"
                   required
-                  className="w-full h-14 bg-[#e0e0e0] rounded-full px-8 outline-none focus:ring-4 ring-blue-600/20 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all shadow-inner"
+                  className="w-full h-14 bg-[#e0e0e0] rounded-full px-8 outline-none focus:ring-4 ring-blue-600/20 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all shadow-inner disabled:opacity-50"
                 />
               </div>
             </div>
@@ -127,7 +149,8 @@ export default function UnlockAccountPage() {
                 disabled={isLoading}
                 required
                 rows={6}
-                className="w-full bg-[#e0e0e0] rounded-[32px] p-8 outline-none focus:ring-4 ring-blue-600/20 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all shadow-inner resize-none"
+                placeholder="Please describe why your account should be unlocked..."
+                className="w-full bg-[#e0e0e0] rounded-[32px] p-8 outline-none focus:ring-4 ring-blue-600/20 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all shadow-inner resize-none disabled:opacity-50"
               />
             </div>
 
