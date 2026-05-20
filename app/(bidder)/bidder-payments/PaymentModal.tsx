@@ -24,12 +24,12 @@ const PaymentModal = ({ isOpen, onClose, data }: PaymentModalProps) => {
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState("");
 
-  if (!isOpen || !data) return null;
-
-  const totalAmount = Number(data.amount.replace(/[^0-9]/g, "")) || 0;
-
   useEffect(() => {
-    if (!isOpen || !data?.id) return;
+    if (!isOpen || !data?.id) {
+      setAuctionDetail(null);
+      setDetailError("");
+      return;
+    }
 
     const fetchDetail = async () => {
       try {
@@ -46,6 +46,10 @@ const PaymentModal = ({ isOpen, onClose, data }: PaymentModalProps) => {
 
     fetchDetail();
   }, [isOpen, data?.id]);
+
+  if (!isOpen || !data) return null;
+
+  const totalAmount = Number(data.amount.replace(/[^0-9]/g, "")) || 0;
 
   const handleConfirm = async () => {
     if (!data?.id) return;
