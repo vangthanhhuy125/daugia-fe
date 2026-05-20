@@ -14,10 +14,23 @@ export const EndedView = ({ infoRows, auctionDetail }: EndedViewProps) => {
         <p className="text-[#CE2029] font-bold text-sm">Highest Bid:</p>
         <div className="w-full py-6 px-8 border border-gray-300 rounded-md flex justify-center items-center bg-gray-50/30">
           <span className="text-3xl font-bold text-[#CE2029]">
-            {auctionDetail?.currentPrice ? `${auctionDetail.currentPrice.toLocaleString()} VND` : "N/A"}
+            {auctionDetail?.currentPrice
+              ? `${auctionDetail.currentPrice.toLocaleString()} VND`
+              : (auctionDetail?.startingPrice ? `${auctionDetail.startingPrice.toLocaleString()} VND` : "N/A")}
           </span>
         </div>
       </div>
+
+      {auctionDetail?.isWinner && (
+        <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-center">
+          <p className="text-green-700 font-bold text-sm">You won this auction.</p>
+        </div>
+      )}
+      {!auctionDetail?.isWinner && auctionDetail?.winnerEmail && (
+        <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 text-center">
+          <p className="text-gray-700 font-bold text-sm">Winner: {auctionDetail.winnerEmail}</p>
+        </div>
+      )}
 
       <div className="flex justify-between items-center text-sm">
         <span className="text-[#CE2029] font-bold">Type:</span>

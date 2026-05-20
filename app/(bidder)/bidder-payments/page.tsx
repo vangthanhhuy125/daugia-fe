@@ -10,8 +10,8 @@ import { PaymentGroup } from "./PaymentGroup";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import PaymentModal from "./PaymentModal";
-import { auctionService } from "@/services/auctionService";
 import { userService } from "@/services/userService";
+import { paymentService } from "@/services/paymentService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -24,6 +24,8 @@ export default function BidderPaymentPage() {
   const [selectedPaymentData, setSelectedPaymentData] = useState<any>(null);
 
   const [paymentData, setPaymentData] = useState<{ Pending: any[]; Paid: any[] }>({ Pending: [], Paid: [] });
+  const [isLoadingPayments, setIsLoadingPayments] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
@@ -41,22 +43,26 @@ export default function BidderPaymentPage() {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const res = await auctionService.getMyAuctions(0, 100);
-        const wonAuctions = res.data.content.filter((item: any) => item.status === "ENDED" && item.isWinner);
-        
+        setIsLoadingPayments(true);
+        setPaymentError("");
+        const res = await paymentService.getMyPayments();
+        const payments = res.data || [];
+
         const pending: any[] = [];
         const paid: any[] = [];
 
-        wonAuctions.forEach((item: any) => {
-          const dateStr = item.biddingEndTime ? new Date(item.biddingEndTime).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }) : "Unknown Date";
+        payments.forEach((item: any) => {
+          const dateSource = item.biddingEndTime || item.createdAt;
+          const dateStr = dateSource ? new Date(dateSource).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }) : "Unknown Date";
+          const rawAmount = item.currentPrice ?? item.amount ?? item.startingPrice ?? 0;
           const formattedItem = {
-            id: item.id.toString(),
-            title: item.productName,
-            amount: `${(item.currentPrice || item.startingPrice || 0).toLocaleString()} VND`,
-            image: item.images?.[0]?.imageUrl || item.thumbnailUrl || "/laptop-image.png"
+            id: item.auctionId?.toString() || "",
+            title: item.auctionTitle || `Auction ${item.auctionId || ""}`,
+            amount: `${Number(rawAmount).toLocaleString()} VND`,
+            image: item.thumbnailUrl || "/laptop-image.png"
           };
-          
-          if (item.paymentStatus === "PAID") {
+
+          if (item.status === "PAID") {
             let group = paid.find(g => g.date === dateStr);
             if (!group) {
               group = { date: dateStr, items: [] };
@@ -75,7 +81,9 @@ export default function BidderPaymentPage() {
 
         setPaymentData({ Pending: pending, Paid: paid });
       } catch (error) {
-        console.error(error);
+        setPaymentError("Failed to load payments. Please try again later.");
+      } finally {
+        setIsLoadingPayments(false);
       }
     };
     fetchPayments();
@@ -83,8 +91,8 @@ export default function BidderPaymentPage() {
 
   const tabs = ["Pending", "Paid"];
 
-  const handleOpenPayment = (groupData: any) => {
-    setSelectedPaymentData(groupData);
+  const handleOpenPayment = (item: any) => {
+    setSelectedPaymentData(item);
     setIsPaymentOpen(true);
   };
 
@@ -128,16 +136,22 @@ export default function BidderPaymentPage() {
             </div>
 
             <div className="space-y-10">
+              {isLoadingPayments && (
+                <div className="text-gray-500 font-medium py-10">Loading payments...</div>
+              )}
+              {!isLoadingPayments && paymentError && (
+                <div className="text-red-600 font-medium py-10">{paymentError}</div>
+              )}
               {paymentData[activeTab]?.map((group: any, idx: number) => (
                 <PaymentGroup 
                   key={idx} 
                   date={group.date} 
                   items={group.items} 
                   status={activeTab} 
-                  onPay={handleOpenPayment}
+                  onPayItem={handleOpenPayment}
                 />
               ))}
-              {(!paymentData[activeTab] || paymentData[activeTab].length === 0) && (
+              {!isLoadingPayments && !paymentError && (!paymentData[activeTab] || paymentData[activeTab].length === 0) && (
                 <div className="text-gray-400 font-medium py-10">No {activeTab.toLowerCase()} payments found.</div>
               )}
             </div>

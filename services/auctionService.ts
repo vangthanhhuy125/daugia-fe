@@ -43,6 +43,10 @@ export const auctionService = {
     return apiClient.get('/auctions/my', { params: { page, size } });
   },
 
+  getMyBidAuctions: (page: number = 0, size: number = 100): Promise<ApiResponse<PageResponse<AuctionSummaryResponse>>> => {
+    return apiClient.get('/auctions/my-bids', { params: { page, size } });
+  },
+
   searchAdmin: (params?: Partial<AuctionFilterRequest>): Promise<ApiResponse<PageResponse<AuctionSummaryResponse>>> => {
     return apiClient.get('/admin/auctions', { params });
   },

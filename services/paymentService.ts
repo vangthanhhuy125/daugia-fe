@@ -11,6 +11,10 @@ export const paymentService = {
     return apiClient.get(`/payments/auction/${auctionId}`);
   },
 
+  getMyPayments: (): Promise<ApiResponse<PaymentResponse[]>> => {
+    return apiClient.get("/payments/my");
+  },
+
   /**
    * Xử lý callback trả về từ VNPay sau khi người dùng thanh toán xong (hoặc hủy)
    * GET: /api/v1/payments/vnpay-return

@@ -3,7 +3,6 @@
 import React from "react";
 import Image from "next/image";
 import { CreditCard, CheckCircle2 } from "lucide-react";
-import { paymentService } from "@/services/paymentService";
 
 interface PaymentItem {
   id: string;
@@ -16,34 +15,15 @@ interface PaymentGroupProps {
   date: string;
   items: PaymentItem[];
   status: "Pending" | "Paid";
-  onPay?: (data: { date: string; items: PaymentItem[] }) => void; 
+  onPayItem?: (item: PaymentItem) => void;
 }
 
-export const PaymentGroup = ({ date, items, status, onPay }: PaymentGroupProps) => {
-  const handlePayment = async () => {
-    try {
-      if (items.length > 0) {
-        const res = await paymentService.createPayment(items[0].id);
-        if (res.data?.paymentUrl) {
-          window.location.href = res.data.paymentUrl;
-        }
-      }
-    } catch (error) {
-      console.error(error);
-    }
-    if (onPay) {
-      onPay({ date, items });
-    }
-  };
-
+export const PaymentGroup = ({ date, items, status, onPayItem }: PaymentGroupProps) => {
   return (
     <div className="relative bg-white border border-gray-100 rounded-[32px] p-6 shadow-sm transition-all hover:shadow-md">
       <div className="absolute top-5 right-6">
         {status === "Pending" ? (
-          <button 
-            onClick={handlePayment}
-            className="hover:scale-110 transition-transform active:opacity-70"
-          >
+          <button className="hover:scale-110 transition-transform active:opacity-70">
             <CreditCard className="text-yellow-500 opacity-60" size={24} />
           </button>
         ) : (
@@ -65,7 +45,17 @@ export const PaymentGroup = ({ date, items, status, onPay }: PaymentGroupProps) 
               </div>
               <h4 className="font-bold text-gray-900 text-xs">{item.title}</h4>
             </div>
-            <span className="font-[900] text-gray-800 text-sm">{item.amount}</span>
+            <div className="flex items-center gap-4">
+              <span className="font-[900] text-gray-800 text-sm">{item.amount}</span>
+              {status === "Pending" && (
+                <button
+                  onClick={() => onPayItem && onPayItem(item)}
+                  className="px-4 py-2 rounded-full bg-[#CE2029] text-white text-[10px] font-[900] tracking-wider hover:bg-red-700"
+                >
+                  Pay
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>

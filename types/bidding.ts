@@ -16,6 +16,7 @@ export interface BidResponse {
   endTime: string;
   status: string;
   rejectionReason?: string;
+  bidTime?: string;
 }
 
 export interface BidHistoryEntryResponse {

@@ -31,7 +31,8 @@ export default function BidderAuctionsPage() {
 
   const tabs = ["Watching", "Participating", "History"];
   
-  const [allAuctions, setAllAuctions] = useState<any[]>([]);
+  const [watchingAuctions, setWatchingAuctions] = useState<any[]>([]);
+  const [myBidAuctions, setMyBidAuctions] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
@@ -49,36 +50,63 @@ export default function BidderAuctionsPage() {
   useEffect(() => {
     const fetchAuctions = async () => {
       try {
-        const res = await auctionService.searchPublic({ size: 100 });
-        const mapped = res.data.content.map((item: any) => {
-          const backendStatus = item.status;
-          let displayStatus = "Watching";
-          if (backendStatus === "ACTIVE") displayStatus = "Participating";
-          if (backendStatus === "ENDED") displayStatus = "History";
+        const [publicRes, myBidRes] = await Promise.all([
+          auctionService.searchPublic({ size: 100 }),
+          auctionService.getMyBidAuctions(0, 200)
+        ]);
 
-          let label = "Starting Bid";
-          if (displayStatus === "Participating") label = "Current Bid";
-          if (displayStatus === "History") label = "Final Bid";
-
-          const rawDate = backendStatus === "ENDED" ? item.biddingEndTime : item.biddingStartTime;
+        const watching = publicRes.data.content.map((item: any) => {
+          const rawDate = item.biddingStartTime;
           const dateStr = rawDate ? new Date(rawDate).toLocaleString("en-GB") : "N/A";
-          const priceVal = item.startingPrice || 0;
+          const priceVal = item.currentPrice ?? item.startingPrice ?? 0;
 
           return {
             id: item.id.toString(),
             title: item.productName,
             category: item.categoryName,
             time: dateStr,
-            price: `${priceVal.toLocaleString()} VND`,
-            priceLabel: label,
+            price: `${Number(priceVal).toLocaleString()} VND`,
+            priceLabel: "Starting Bid",
             image: item.thumbnailUrl || "/laptop-image.png",
-            status: displayStatus,
+            status: "Watching",
             isLeading: false,
-            result: displayStatus === "History" ? "lost" : undefined,
+            result: undefined,
             rawDate: rawDate
           };
         });
-        setAllAuctions(mapped);
+
+        const myBids = myBidRes.data.content.map((item: any) => {
+          const backendStatus = item.status;
+          let displayStatus = "Participating";
+          if (backendStatus === "ENDED") displayStatus = "History";
+
+          let label = "Current Bid";
+          if (displayStatus === "History") label = "Final Bid";
+
+          const rawDate = displayStatus === "History"
+            ? (item.endTime || item.biddingEndTime)
+            : item.biddingStartTime;
+          const dateStr = rawDate ? new Date(rawDate).toLocaleString("en-GB") : "N/A";
+          const priceVal = item.currentPrice ?? item.startingPrice ?? 0;
+          const isWinner = item.isWinner ?? item.winner ?? false;
+
+          return {
+            id: item.id.toString(),
+            title: item.productName,
+            category: item.categoryName,
+            time: dateStr,
+            price: `${Number(priceVal).toLocaleString()} VND`,
+            priceLabel: label,
+            image: item.thumbnailUrl || "/laptop-image.png",
+            status: displayStatus,
+            isLeading: Boolean(isWinner) && displayStatus === "Participating",
+            result: displayStatus === "History" ? (isWinner ? "won" : "lost") : undefined,
+            rawDate: rawDate
+          };
+        });
+
+        setWatchingAuctions(watching);
+        setMyBidAuctions(myBids);
       } catch (error) {
         console.error(error);
       }
@@ -94,7 +122,8 @@ export default function BidderAuctionsPage() {
     setHistoryStatus("All status");
   };
 
-  const filteredAuctions = allAuctions.filter(item => {
+  const sourceAuctions = activeTab === "Watching" ? watchingAuctions : myBidAuctions;
+  const filteredAuctions = sourceAuctions.filter(item => {
     const matchesTab = item.status === activeTab;
     const matchesSearch = searchTerm.length >= 2 
       ? item.title?.toLowerCase().includes(searchTerm.toLowerCase()) 
