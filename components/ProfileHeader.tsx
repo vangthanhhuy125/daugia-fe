@@ -106,6 +106,8 @@ export const ProfileHeader = ({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const isSeller = role?.toLowerCase() === "seller";
+
   return (
     <div className="bg-white rounded-[40px] shadow-[0_10px_50px_-12px_rgba(0,0,0,0.1)] border border-gray-100 overflow-hidden">
       {imageToCrop && (
@@ -200,7 +202,7 @@ export const ProfileHeader = ({
               <MessageSquare size={18} fill="white" /> Feedback
             </button>
             
-            {role.toLowerCase() === "seller" && (
+            {isSeller && (
               <button onClick={onCreateAuctionClick} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-full font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
                 <PlusCircle size={18} fill="white" className="text-blue-600" /> Create New Auction
               </button>

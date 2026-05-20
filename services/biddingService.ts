@@ -46,4 +46,8 @@ export const biddingService = {
   getMyBiddingHistory: (page: number = 0, size: number = 999): Promise<ApiResponse<PageResponse<BidHistoryEntryResponse>>> => {
     return apiClient.get("/bidding/my", { params: { page, size } });
   },
+
+  getOwnAutoBid: (auctionId: string) => {
+  return apiClient.get(`/auctions/${auctionId}/auto-bid`);
+}
 };

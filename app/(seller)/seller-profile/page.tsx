@@ -73,6 +73,7 @@ export default function SellerProfilePage() {
           bannerUrl="/banner.jpg"
           onFeedbackClick={() => setIsFeedbackOpen(true)}
           onEditClick={() => setIsEditModalOpen(true)}
+          onCreateAuctionClick={() => setIsCreateModalOpen(true)}
         />
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mt-12 px-4">
           <Sidebar />

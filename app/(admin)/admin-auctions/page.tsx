@@ -7,13 +7,28 @@ import Footer from "@/components/Footer";
 import { Sidebar } from "@/components/Sidebar";
 import { Search, Calendar, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
-import DatePicker from "react-datepicker";
+import dynamic from "next/dynamic";
 // @ts-ignore
 import "react-datepicker/dist/react-datepicker.css";
 import AdminAuctionCard from "./AdminAuctionCard"; 
 import AuctionDetailModal from "./AuctionDetailModal";
 import AwaitingApprovalModal from "./AwaitingApprovalModal";
 import { auctionService } from "@/services/auctionService";
+
+const DatePickerNoSSR = dynamic(
+  () => import("react-datepicker").then(mod => mod.default),
+  {
+    ssr: false,
+    loading: () => (
+      <input 
+        type="text" 
+        placeholder="Loading date..." 
+        className="bg-[#f5f5f5] rounded-xl px-4 h-11 outline-none border border-transparent w-full"
+        disabled
+      />
+    ),
+  }
+) as React.ComponentType<any>;
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -39,15 +54,32 @@ export default function AdminAuctionsPage() {
         const res = await auctionService.searchAdmin({ size: 1000 });
         const items = res.data.content || [];
         
-        const pending = items
-          .filter((i: any) => i.status === "PENDING")
-          .map((i: any) => ({
-            id: i.id,
-            name: i.productName,
-            registrationDay: new Date(i.createdAt).toLocaleDateString('en-GB'),
-            registrant: "Seller", 
-            imageUrl: i.thumbnailUrl || "/laptop-image.png"
-          }));
+        // Lọc danh sách PENDING
+        const pendingItems = items.filter((i: any) => i.status === "PENDING");
+
+        // Gọi chi tiết từng item PENDING song song để bốc tách trường sellerName chuẩn xác nhất
+        const pendingWithDetails = await Promise.all(
+          pendingItems.map(async (i: any) => {
+            try {
+              const detailRes = await auctionService.getByIdAdmin(i.id);
+              return {
+                id: i.id,
+                name: i.productName,
+                registrationDay: new Date(i.createdAt).toLocaleDateString('en-GB'),
+                registrant: detailRes.data?.sellerName || i.sellerName || "N/A", 
+                imageUrl: i.thumbnailUrl || "/laptop-image.png"
+              };
+            } catch (err) {
+              return {
+                id: i.id,
+                name: i.productName,
+                registrationDay: new Date(i.createdAt).toLocaleDateString('en-GB'),
+                registrant: i.sellerName || "N/A", 
+                imageUrl: i.thumbnailUrl || "/laptop-image.png"
+              };
+            }
+          })
+        );
           
         const sessions = items
           .filter((i: any) => i.status !== "PENDING" && i.status !== "REJECTED")
@@ -67,7 +99,7 @@ export default function AdminAuctionsPage() {
             };
           });
           
-        setMockPending(pending);
+        setMockPending(pendingWithDetails);
         setMockSessions(sessions);
       } catch (error) {
         console.error(error);
@@ -212,7 +244,7 @@ export default function AdminAuctionsPage() {
                   </div>
 
                   <div className="w-36 relative custom-datepicker">
-                    <DatePicker
+                    <DatePickerNoSSR
                       selected={startDate}
                       onChange={(date: Date | null) => {setStartDate(date); setCurrentPage(1);}}
                       placeholderText="From date"
@@ -223,7 +255,7 @@ export default function AdminAuctionsPage() {
                   </div>
 
                   <div className="w-36 relative custom-datepicker">
-                    <DatePicker
+                    <DatePickerNoSSR
                       selected={endDate}
                       onChange={(date: Date | null) => {setEndDate(date); setCurrentPage(1);}}
                       placeholderText="To date"

@@ -71,6 +71,10 @@ export const UpcomingModal = ({ isOpen, onClose, auctionId }: UpcomingModalProps
     { label: "Bidding end time:", value: auctionDetail.biddingEndTime ? new Date(auctionDetail.biddingEndTime).toLocaleString('en-GB') : "N/A" },
   ] : [];
 
+  const imagesList = auctionDetail?.images || [];
+  const mainImage = imagesList[0]?.imageUrl || "/banner.jpg";
+  const subImages = imagesList.slice(1);
+
   return (
     <div className={`${jost.className} fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 md:p-6 animate-in fade-in duration-200`}>
       <div className="bg-white w-full max-w-5xl rounded-[32px] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden scale-in-center animate-in zoom-in-95 duration-200">
@@ -90,17 +94,26 @@ export const UpcomingModal = ({ isOpen, onClose, auctionId }: UpcomingModalProps
             
             <div className="lg:col-span-5 flex flex-col gap-4">
               <div className="relative w-full aspect-[4/3] bg-gray-50 rounded-3xl overflow-hidden border border-gray-200">
-                <Image src={auctionDetail?.images?.[0]?.imageUrl || "/banner.jpg"} alt="Main product" fill className="object-cover" />
+                <Image src={mainImage} alt="Main product" fill className="object-cover" priority />
               </div>
 
-              <div className="flex gap-4 overflow-x-auto">
-                <div className="relative w-32 h-24 flex-shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
-                  <Image src={auctionDetail?.images?.[1]?.imageUrl || "/banner.jpg"} alt="Thumb 1" fill className="object-cover" />
+              {subImages.length > 0 && (
+                <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
+                  {subImages.map((img: any, idx: number) => (
+                    <div
+                      key={img.id || idx}
+                      className="relative w-32 h-24 flex-shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200"
+                    >
+                      <Image 
+                        src={img.imageUrl || "/banner.jpg"} 
+                        alt={`Sub image ${idx + 1}`} 
+                        fill 
+                        className="object-cover" 
+                      />
+                    </div>
+                  ))}
                 </div>
-                <div className="relative w-32 h-24 flex-shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
-                  <Image src={auctionDetail?.images?.[2]?.imageUrl || "/nen.jpg"} alt="Thumb 2" fill className="object-cover" />
-                </div>
-              </div>
+              )}
 
               <div className="flex items-center gap-4 mt-2">
                 <button className="flex-1 flex items-center justify-center gap-2 bg-[#e0e0e0] hover:bg-gray-300 text-gray-900 h-12 rounded-xl font-bold transition-colors">
@@ -162,6 +175,7 @@ export const UpcomingModal = ({ isOpen, onClose, auctionId }: UpcomingModalProps
         <style jsx global>{`
           .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
+            height: 6px;
           }
           .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;

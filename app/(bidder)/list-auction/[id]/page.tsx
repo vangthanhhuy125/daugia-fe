@@ -13,6 +13,7 @@ import { EndedView } from "./EndedView";
 import { auctionService } from "@/services/auctionService";
 import { userService } from "@/services/userService";
 import { paymentService } from "@/api/apiClient";
+import { biddingService } from "@/services/biddingService"; // Import biddingService vào đây
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "600", "700", "900"] });
 
@@ -26,9 +27,25 @@ export default function AuctionDetailPage() {
 
   useEffect(() => {
     if (id) {
-      auctionService.getByIdPublic(id)
-        .then(res => {
-          const data = res.data;
+      // Gọi song song 2 API: Chi tiết cuộc đấu giá công khai VÀ cấu hình Auto Bid của riêng bồ
+      Promise.all([
+        auctionService.getByIdPublic(id),
+        biddingService.getOwnAutoBid(id).catch(() => null) // Nếu chưa cài Auto Bid, BE trả về 404 -> catch bọc lại cho trả về null để không sập trang
+      ])
+        .then(([auctionRes, autoBidRes]) => {
+          const data = auctionRes.data as any;
+          
+          if (data) {
+            // Nếu có cấu hình Auto Bid của người dùng này trả về từ BE
+            if (autoBidRes && autoBidRes.data) {
+              data.active = autoBidRes.data.active;
+              data.maxAmount = autoBidRes.data.maxAmount;
+            } else {
+              data.active = false;
+              data.maxAmount = null;
+            }
+          }
+
           setAuctionDetail(data);
           let s: 'Upcoming' | 'Live' | 'Ended' = 'Upcoming';
           if (data.status === 'ACTIVE') s = 'Live';
@@ -50,6 +67,10 @@ export default function AuctionDetailPage() {
     { label: "Bidding end time:", value: auctionDetail.biddingEndTime ? new Date(auctionDetail.biddingEndTime).toLocaleString('en-GB') : "N/A" },
   ] : [];
 
+  const imagesList = auctionDetail?.images || [];
+  const mainImage = imagesList[0]?.imageUrl || "/laptop-image.png";
+  const subImages = imagesList.slice(1);
+
   return (
     <div className={`${jost.className} min-h-screen flex flex-col bg-white`}>
       <Header />
@@ -65,17 +86,21 @@ export default function AuctionDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-5 space-y-8">
             <div className="relative aspect-video rounded-[32px] overflow-hidden border border-gray-100 shadow-sm bg-gray-50">
-              <Image src={auctionDetail?.images?.[0]?.imageUrl || "/laptop-image.png"} alt="Product" fill className="object-contain p-4" />
+              <Image src={mainImage} alt="Product" fill className="object-contain p-4" priority />
             </div>
 
-            <div className="flex gap-4">
-              <div className="relative w-32 h-24 rounded-2xl overflow-hidden border-2 border-gray-100 cursor-pointer hover:border-[#CE2029] transition-all">
-                <Image src={auctionDetail?.images?.[1]?.imageUrl || "/laptop-sub1.jpg"} alt="Sub" fill className="object-cover" />
+            {subImages.length > 0 && (
+              <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
+                {subImages.map((img: any, idx: number) => (
+                  <div 
+                    key={img.id || idx} 
+                    className="relative w-32 h-24 rounded-2xl overflow-hidden border-2 border-gray-100 flex-shrink-0"
+                  >
+                    <Image src={img.imageUrl || "/laptop-sub1.jpg"} alt={`Sub ${idx + 1}`} fill className="object-cover" />
+                  </div>
+                ))}
               </div>
-              <div className="relative w-32 h-24 rounded-2xl overflow-hidden border-2 border-gray-100 cursor-pointer hover:border-[#CE2029] transition-all">
-                <Image src={auctionDetail?.images?.[2]?.imageUrl || "/laptop-sub2.jpg"} alt="Sub" fill className="object-cover" />
-              </div>
-            </div>
+            )}
 
             <div className="bg-gray-50/50 border border-gray-100 rounded-[32px] p-8 shadow-sm">
               <h3 className="text-[#CE2029] font-bold text-xl mb-6">Seller Info</h3>
@@ -85,15 +110,14 @@ export default function AuctionDetailPage() {
                   <span className="font-bold text-gray-900">{auctionDetail?.sellerName || "N/A"}</span>
                 </div>
                 <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                  <span className="font-bold text-gray-500">Rating:</span>
-                  <div className="flex items-center gap-1">
-                    <span className="font-bold text-gray-900">{auctionDetail?.sellerRating || 0}</span>
-                    <Star size={18} fill="#f59e0b" className="text-amber-500" />
-                  </div>
+                  <span className="font-bold text-gray-500">Email:</span>
+                  <span className="font-bold text-gray-900">{auctionDetail?.sellerEmail || "N/A"}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-gray-500">Products Sold:</span>
-                  <span className="font-bold text-gray-900">{auctionDetail?.productsSold || 0}</span>
+                  <span className="text-gray-700">
+                    {auctionDetail?.status === "ENDED" && (auctionDetail?.winnerEmail || auctionDetail?.bidderEmailMasked) ? 1 : 0}
+                  </span>
                 </div>
               </div>
             </div>
@@ -122,7 +146,7 @@ export default function AuctionDetailPage() {
                     </svg>
                   </button>
 
-                  <h2 className="text-[ #CC2424] text-2xl md:text-3xl font-bold mb-4 text-center tracking-wide mt-2">
+                  <h2 className="text-[#CC2424] text-2xl md:text-3xl font-bold mb-4 text-center tracking-wide mt-2">
                     Confirm Purchase
                   </h2>
 
@@ -156,18 +180,15 @@ export default function AuctionDetailPage() {
                           
                           const res = await paymentService.createPayment(auctionDetail.id);
 
-                          // Thêm console.log để debug xem cấu trúc JSON thực tế trả về từ Interceptor là gì
                           console.log("Payment response status:", res);
 
                           if (res?.data?.paymentUrl) {
                             window.location.href = res.data.paymentUrl;
                           } else {
-                            // Trường hợp Backend trả về success=false hoặc message lỗi nằm trong res
                             alert(res?.message || "Could not generate payment link. Please try again!");
                             setIsProcessing(false);
                           }
                         } catch (error: any) {
-                          // Chuỗi hóa hoặc lôi thuộc tính message ra để xem lỗi thực sự là gì (401, 403, 404, hay 500)
                           console.error("Detailed Payment Error:", JSON.stringify(error));
                           
                           const errorMsg = error?.data?.message || error?.message || "An error occurred during process execution.";
@@ -182,7 +203,7 @@ export default function AuctionDetailPage() {
                       {isProcessing ? (
                         <>
                           <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                           </svg>
                           Processing...

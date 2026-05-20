@@ -5,6 +5,7 @@ import Image from "next/image";
 import { X, ChevronDown } from "lucide-react";
 import { Jost } from "next/font/google";
 import { auctionService } from "@/services/auctionService";
+import { biddingService } from "@/services/biddingService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -17,10 +18,9 @@ interface EndedModalProps {
 export const EndedModal = ({ isOpen, onClose, auctionId }: EndedModalProps) => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [auctionDetail, setAuctionDetail] = useState<any>(null);
+  const [bidHistory, setBidHistory] = useState<any[]>([]);
 
-  const initialBidHistory: any[] = [];
-
-  const sortedBidHistory = [...initialBidHistory].sort((a, b) => {
+  const sortedBidHistory = [...bidHistory].sort((a, b) => {
     return sortOrder === "asc" ? a.amount - b.amount : b.amount - a.amount;
   });
 
@@ -33,8 +33,23 @@ export const EndedModal = ({ isOpen, onClose, auctionId }: EndedModalProps) => {
       auctionService.getByIdPublic(auctionId)
         .then(res => setAuctionDetail(res.data))
         .catch(err => console.error(err));
+
+      // Gọi API lấy lịch sử đấu giá thực tế từ biddingService
+      biddingService.getImmutableHistory(auctionId)
+        .then(res => {
+          const mapped = res.data.content.map((item: any, index: number) => ({
+            no: index + 1,
+            name: item.bidderEmailMasked, // Map email ẩn vào cột Bidder Name
+            amount: item.amount,
+            time: new Date(item.bidTime).toLocaleString('en-GB'),
+            isLeading: index === 0
+          }));
+          setBidHistory(mapped);
+        })
+        .catch(err => console.error(err));
     } else {
       setAuctionDetail(null);
+      setBidHistory([]);
     }
   }, [isOpen, auctionId]);
 
@@ -52,6 +67,13 @@ export const EndedModal = ({ isOpen, onClose, auctionId }: EndedModalProps) => {
     { label: "Bidding start time:", value: auctionDetail.biddingStartTime ? new Date(auctionDetail.biddingStartTime).toLocaleString('en-GB') : "N/A" },
     { label: "Bidding end time:", value: auctionDetail.biddingEndTime ? new Date(auctionDetail.biddingEndTime).toLocaleString('en-GB') : "N/A" },
   ] : [];
+
+  const imagesList = auctionDetail?.images || [];
+  const mainImage = imagesList[0]?.imageUrl || "/banner.jpg";
+  const subImages = imagesList.slice(1);
+
+  // Lấy email ẩn của người thắng cuộc từ vị trí đầu tiên trong lịch sử đấu giá
+  const winnerEmail = bidHistory.find(b => b.isLeading)?.name || auctionDetail?.bidderEmailMasked || "N/A";
 
   return (
     <div className={`${jost.className} fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 md:p-6 animate-in fade-in duration-200`}>
@@ -73,17 +95,32 @@ export const EndedModal = ({ isOpen, onClose, auctionId }: EndedModalProps) => {
             
             <div className="lg:col-span-5 flex flex-col gap-4">
               <div className="relative w-full aspect-[4/3] bg-gray-50 rounded-3xl overflow-hidden border border-gray-200">
-                <Image src={auctionDetail?.images?.[0]?.imageUrl || "/banner.jpg"} alt="Main product" fill className="object-cover" />
+                <Image 
+                  src={mainImage} 
+                  alt="Main product" 
+                  fill 
+                  className="object-cover" 
+                  priority
+                />
               </div>
 
-              <div className="flex gap-4 overflow-x-auto">
-                <div className="relative w-32 h-24 flex-shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
-                  <Image src={auctionDetail?.images?.[1]?.imageUrl || "/banner.jpg"} alt="Thumb 1" fill className="object-cover" />
+              {subImages.length > 0 && (
+                <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
+                  {subImages.map((img: any, idx: number) => (
+                    <div
+                      key={img.id || idx}
+                      className="relative w-32 h-24 flex-shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200"
+                    >
+                      <Image 
+                        src={img.imageUrl || "/banner.jpg"} 
+                        alt={`Sub image ${idx + 1}`} 
+                        fill 
+                        className="object-cover" 
+                      />
+                    </div>
+                  ))}
                 </div>
-                <div className="relative w-32 h-24 flex-shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
-                  <Image src={auctionDetail?.images?.[2]?.imageUrl || "/nen.jpg"} alt="Thumb 2" fill className="object-cover" />
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="lg:col-span-7 flex flex-col gap-4">
@@ -101,8 +138,8 @@ export const EndedModal = ({ isOpen, onClose, auctionId }: EndedModalProps) => {
                       {auctionDetail?.currentPrice 
                       ? `${auctionDetail.currentPrice.toLocaleString()} VND` 
                       : (auctionDetail?.startingPrice 
-                          ? `${auctionDetail.startingPrice.toLocaleString()} VND` 
-                          : "N/A")}
+                        ? `${auctionDetail.startingPrice.toLocaleString()} VND` 
+                        : "N/A")}
                     </span>
                   </div>
                 </div>
@@ -113,7 +150,7 @@ export const EndedModal = ({ isOpen, onClose, auctionId }: EndedModalProps) => {
                   </p>
                   <div className="border border-gray-300 rounded-none p-3 text-center">
                     <span className="text-xl font-[900] text-[#d32f2f] tracking-wide">
-                      {auctionDetail?.bidderEmailMasked || "N/A"}
+                      {winnerEmail}
                     </span>
                   </div>
                 </div>
@@ -191,6 +228,7 @@ export const EndedModal = ({ isOpen, onClose, auctionId }: EndedModalProps) => {
         <style jsx global>{`
           .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
+            height: 6px;
           }
           .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;

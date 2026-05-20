@@ -5,6 +5,7 @@ import { X, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { Jost } from "next/font/google";
 import { auctionService } from "@/services/auctionService";
+import { biddingService } from "@/services/biddingService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -17,14 +18,29 @@ interface AuctionDetailModalProps {
 const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [auctionDetail, setAuctionDetail] = useState<any>(null);
+  const [bidHistory, setBidHistory] = useState<any[]>([]);
 
   useEffect(() => {
     if (isOpen && data?.id) {
       auctionService.getByIdAdmin(data.id)
         .then(res => setAuctionDetail(res.data))
         .catch(err => console.error(err));
+
+      biddingService.getImmutableHistory(data.id)
+        .then(res => {
+          const mapped = res.data.content.map((item: any, index: number) => ({
+            no: index + 1,
+            name: item.bidderEmailMasked,
+            amount: item.amount,
+            time: new Date(item.bidTime).toLocaleString('en-GB'),
+            isLeading: index === 0
+          }));
+          setBidHistory(mapped);
+        })
+        .catch(err => console.error(err));
     } else {
       setAuctionDetail(null);
+      setBidHistory([]);
     }
   }, [isOpen, data]);
 
@@ -32,9 +48,7 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
 
   const isUpcoming = data.status === "Upcoming" || auctionDetail?.status === "PENDING" || auctionDetail?.status === "APPROVED";
 
-  const initialBidHistory: any[] = [];
-
-  const sortedBidHistory = [...initialBidHistory].sort((a, b) => {
+  const sortedBidHistory = [...bidHistory].sort((a, b) => {
     return sortOrder === "asc" ? a.amount - b.amount : b.amount - a.amount;
   });
 
@@ -55,6 +69,13 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
     { label: "Bidding end time:", value: auctionDetail.biddingEndTime ? new Date(auctionDetail.biddingEndTime).toLocaleString('en-GB') : "N/A" },
   ] : [];
 
+  const imagesList = auctionDetail?.images || [];
+  const mainImage = imagesList[0]?.imageUrl || data.imageUrl || "/banner.jpg";
+  const subImages = imagesList.slice(1);
+
+  const highestBid = bidHistory.find(b => b.isLeading)?.amount;
+  const winnerEmail = bidHistory.find(b => b.isLeading)?.name;
+
   return (
     <div className={`${jost.className} fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200`}>
       <div className="bg-white w-full max-w-5xl rounded-[32px] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
@@ -71,17 +92,21 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
             
             <div className="lg:col-span-5 flex flex-col gap-6">
               <div className="relative w-full aspect-[4/3] bg-gray-50 rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
-                <Image src={auctionDetail?.images?.[0]?.imageUrl || data.imageUrl || "/banner.jpg"} alt="Main product" fill className="object-cover" />
+                <Image src={mainImage} alt="Main product" fill className="object-cover" priority />
               </div>
 
-              <div className="flex gap-4 overflow-x-auto pb-2">
-                <div className="relative w-32 h-24 shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
-                  <Image src={auctionDetail?.images?.[1]?.imageUrl || data.imageUrl || "/banner.jpg"} alt="Thumb 1" fill className="object-cover" />
+              {subImages.length > 0 && (
+                <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
+                  {subImages.map((img: any, idx: number) => (
+                    <div
+                      key={img.id || idx}
+                      className="relative w-32 h-24 shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200"
+                    >
+                      <Image src={img.imageUrl || "/banner.jpg"} alt={`Sub image ${idx + 1}`} fill className="object-cover" />
+                    </div>
+                  ))}
                 </div>
-                <div className="relative w-32 h-24 shrink-0 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
-                  <Image src={auctionDetail?.images?.[2]?.imageUrl || data.imageUrl || "/nen.jpg"} alt="Thumb 2" fill className="object-cover" />
-                </div>
-              </div>
+              )}
 
               <div className="border border-gray-200 rounded-[24px] p-5 space-y-3 bg-white shadow-sm rounded-2xl">
                 <h3 className="text-[#d32f2f] font-[900] text-lg mb-2">Seller Info</h3>
@@ -91,7 +116,9 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
                   <span className="text-gray-900 font-black">Email:</span>
                   <span className="text-gray-700">{auctionDetail?.sellerEmail || "N/A"}</span>
                   <span className="text-gray-900 font-black">Sold:</span>
-                  <span className="text-gray-700">0</span>
+                  <span className="text-gray-700">
+                    {auctionDetail?.status === "ENDED" && bidHistory.length > 0 ? 1 : 0}
+                  </span>
                 </div>
               </div>
             </div>
@@ -102,17 +129,21 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
               </h3>
 
               {!isUpcoming && (
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-[#d32f2f] font-bold text-sm mb-1">Highest Bid:</p>
-                    <div className="border border-gray-300 rounded-none p-3 text-center bg-red-50/10 rounded-xl">
-                      <span className="text-2xl font-[900] text-[#d32f2f] tracking-wide">N/A</span>
+                    <div className="border border-gray-300 p-3 text-center bg-red-50/10 rounded-xl">
+                      <span className="text-xl font-[900] text-[#d32f2f] tracking-wide">
+                        {highestBid ? `${highestBid.toLocaleString()} VND` : (auctionDetail?.startingPrice ? `${auctionDetail.startingPrice.toLocaleString()} VND` : "N/A")}
+                      </span>
                     </div>
                   </div>
                   <div>
                     <p className="text-[#d32f2f] font-bold text-sm mb-1">Winner:</p>
-                    <div className="border border-gray-300 rounded-none p-3 text-center bg-red-50/10 rounded-xl">
-                      <span className="text-2xl font-[900] text-[#d32f2f] tracking-wide">N/A</span>
+                    <div className="border border-gray-300 p-3 text-center bg-red-50/10 rounded-xl">
+                      <span className="text-xl font-[900] text-[#d32f2f] tracking-wide truncate block">
+                        {winnerEmail || "N/A"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -184,7 +215,7 @@ const AuctionDetailModal = ({ isOpen, onClose, data }: AuctionDetailModalProps) 
         </div>
 
         <style jsx global>{`
-          .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+          .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 6px; }
           .custom-scrollbar::-webkit-scrollbar-track { background: transparent; margin: 10px 0; }
           .custom-scrollbar::-webkit-scrollbar-thumb {
             background-color: #cbd5e1;

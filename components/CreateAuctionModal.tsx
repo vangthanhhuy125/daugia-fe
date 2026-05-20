@@ -48,39 +48,93 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
     }
   }, [isOpen]);
 
+  const validateFile = (file: File): boolean => {
+    const validExtensions = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+    if (!validExtensions.includes(file.type)) {
+      alert(`File ${file.name} is not in a valid image format (.jpg, .png, etc.)!`);
+      return false;
+    }
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert(`File ${file.name} exceeds the maximum size limit of 5MB!`);
+      return false;
+    }
+    return true;
+  };
+
   const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setMainFile(e.target.files[0]);
-      setMainImage(URL.createObjectURL(e.target.files[0]));
+      const file = e.target.files[0];
+      if (validateFile(file)) {
+        setMainFile(file);
+        setMainImage(URL.createObjectURL(file));
+      } else {
+        e.target.value = "";
+      }
     }
   };
 
   const handleThumbImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      setThumbFiles(prev => [...prev, ...filesArray]);
-      const urlsArray = filesArray.map(file => URL.createObjectURL(file));
-      setThumbnails(prev => [...prev, ...urlsArray]);
+      const validFiles: File[] = [];
+      const validUrls: string[] = [];
+
+      filesArray.forEach(file => {
+        if (validateFile(file)) {
+          validFiles.push(file);
+          validUrls.push(URL.createObjectURL(file));
+        }
+      });
+
+      if (validFiles.length > 0) {
+        setThumbFiles(prev => [...prev, ...validFiles]);
+        setThumbnails(prev => [...prev, ...validUrls]);
+      }
+      e.target.value = "";
     }
   };
 
   const formatLocalDateTime = (date: Date) => {
     const pad = (value: number) => value.toString().padStart(2, "0");
-    return [
-      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-      `T${pad(date.getHours())}:${pad(date.getMinutes())}:00`,
-    ].join("");
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}:00`;
   };
 
   const handleCreate = async () => {
     try {
-      if (!startDate || !endDate || !startHour || !startMin || !endHour || !endMin) return;
+      if (!productName || !selectedCategoryId || !startingPrice || !bidIncrement) {
+        alert("Please fill in all required fields.");
+        return;
+      }
+
+      if (!mainFile) {
+        alert("Please upload a main product image.");
+        return;
+      }
+
+      if (!startDate || !endDate || !startHour || !startMin || !endHour || !endMin) {
+        alert("Please configure both bidding start time and end time fully.");
+        return;
+      }
 
       const fullStartDate = new Date(startDate);
       fullStartDate.setHours(parseInt(startHour), parseInt(startMin), 0, 0);
 
       const fullEndDate = new Date(endDate);
       fullEndDate.setHours(parseInt(endHour), parseInt(endMin), 0, 0);
+
+      const minEndDate = new Date(fullStartDate.getTime() + 60 * 60 * 1000);
+
+      if (fullEndDate < minEndDate) {
+        alert("Bidding end time must be at least 1 hour after the bidding start time.");
+        return;
+      }
 
       const requestData = {
         productName,
@@ -94,13 +148,16 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
       };
 
       const allFiles: File[] = [];
-      if (mainFile) allFiles.push(mainFile);
+      allFiles.push(mainFile);
       if (thumbFiles.length > 0) allFiles.push(...thumbFiles);
 
       await auctionService.createAuction(requestData, allFiles);
       onClose();
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.dir(error);
+      const apiErrorMsg = error?.response?.data?.message || error?.response?.data?.error;
+      const systemErrorMsg = error?.message;
+      alert(`Error creating auction: ${apiErrorMsg || systemErrorMsg || "Unknown error"}`);
     }
   };
 
@@ -164,7 +221,7 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
                 onChange={handleThumbImageChange} 
               />
 
-              <div className="flex gap-4 overflow-x-auto pb-2">
+              <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
                 {thumbnails.map((img, idx) => (
                   <div
                     key={idx}
@@ -418,6 +475,7 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
         <style jsx global>{`
           .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
+            height: 6px;
           }
           .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;

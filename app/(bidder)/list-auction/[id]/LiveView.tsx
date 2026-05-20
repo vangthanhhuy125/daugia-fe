@@ -19,6 +19,11 @@ export const LiveView = ({ infoRows, auctionDetail }: LiveViewProps) => {
   const currentHighest = auctionDetail?.currentPrice || auctionDetail?.startingPrice || 0;
   const minValidBid = currentHighest + bidIncrement;
 
+  const hasActiveAutoBid = 
+    Boolean(auctionDetail?.active) === true && 
+    (auctionDetail?.maxAmount !== undefined && auctionDetail?.maxAmount !== null) &&
+    Number(currentHighest) <= Number(auctionDetail?.maxAmount);
+
   useEffect(() => {
     if (!auctionDetail?.biddingEndTime) return;
 
@@ -86,6 +91,7 @@ export const LiveView = ({ infoRows, auctionDetail }: LiveViewProps) => {
       setIsSettingAutoBid(true);
       await biddingService.createAutoBid(auctionDetail.id, { maxAmount: Number(autoBidAmount) });
       alert("Auto bid configured successfully!");
+      window.location.reload();
     } catch (error: any) {
       console.error(error);
       alert(error.response?.data?.message || error.message || "Failed to setup auto bid");
@@ -132,51 +138,70 @@ export const LiveView = ({ infoRows, auctionDetail }: LiveViewProps) => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
-        <div className="border border-gray-200 rounded-2xl p-5 space-y-4 shadow-sm bg-white">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-blue-600">Your Maximum Bid:</label>
-            <input 
-              type="number" 
-              value={autoBidAmount}
-              min={minValidBid + bidIncrement}
-              step={bidIncrement}
-              onChange={(e) => setAutoBidAmount(e.target.value)}
-              placeholder="Set your maximum bid"
-              className="w-full h-10 border border-gray-200 rounded-md px-4 text-sm outline-none focus:border-blue-500 transition-all"
-            />
+      {hasActiveAutoBid ? (
+        <div className="bg-[#0A194E] rounded-[24px] p-6 text-white space-y-3 shadow-md mt-6">
+          <h4 className="text-xl font-bold tracking-tight inline-block border-b-2 border-blue-400 pb-0.5">
+            Auto Bid
+          </h4>
+          <div className="flex gap-4 text-base">
+            <span className="font-bold opacity-80 min-w-[120px]">Your max bid:</span>
+            <span className="font-medium">{Number(auctionDetail.maxAmount).toLocaleString()} VND</span>
           </div>
-          <button 
-            onClick={handleEnableAutoBid}
-            disabled={isSettingAutoBid || !autoBidAmount}
-            className="w-full h-11 bg-blue-600 text-white font-bold text-sm rounded-md hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSettingAutoBid ? "Configuring..." : "Enable Auto Bid"}
-          </button>
+          <div className="flex gap-4 text-base">
+            <span className="font-bold opacity-80 min-w-[120px]">Auto Bid Status:</span>
+            <span className="font-medium text-emerald-400">Active</span>
+          </div>
+          <p className="text-sm italic pt-2 font-light opacity-90">
+            {auctionDetail?.isHighestBidder ? "You are currently the highest bidder." : "Auto bidding in progress..."}
+          </p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+          <div className="border border-gray-200 rounded-2xl p-5 space-y-4 shadow-sm bg-white">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-blue-600">Your Maximum Bid:</label>
+              <input 
+                type="number" 
+                value={autoBidAmount}
+                min={minValidBid + bidIncrement}
+                step={bidIncrement}
+                onChange={(e) => setAutoBidAmount(e.target.value)}
+                placeholder="Set your maximum bid"
+                className="w-full h-10 border border-gray-200 rounded-md px-4 text-sm outline-none focus:border-blue-500 transition-all"
+              />
+            </div>
+            <button 
+              onClick={handleEnableAutoBid}
+              disabled={isSettingAutoBid || !autoBidAmount}
+              className="w-full h-11 bg-blue-600 text-white font-bold text-sm rounded-md hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSettingAutoBid ? "Configuring..." : "Enable Auto Bid"}
+            </button>
+          </div>
 
-        <div className="border border-gray-200 rounded-2xl p-5 space-y-4 shadow-sm bg-white">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-[#CE2029]">Your Bid:</label>
-            <input 
-              type="number" 
-              value={bidAmount}
-              min={minValidBid}
-              step={bidIncrement}
-              onChange={(e) => setBidAmount(e.target.value)}
-              placeholder={`Min bid amount: ${minValidBid.toLocaleString()} VND`}
-              className="w-full h-10 border border-gray-200 rounded-md px-4 text-sm outline-none focus:border-[#CE2029] transition-all"
-            />
+          <div className="border border-gray-200 rounded-2xl p-5 space-y-4 shadow-sm bg-white">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-[#CE2029]">Your Bid:</label>
+              <input 
+                type="number" 
+                value={bidAmount}
+                min={minValidBid}
+                step={bidIncrement}
+                onChange={(e) => setBidAmount(e.target.value)}
+                placeholder={`Min bid amount: ${minValidBid.toLocaleString()} VND`}
+                className="w-full h-10 border border-gray-200 rounded-md px-4 text-sm outline-none focus:border-focus:border-[#CE2029] transition-all"
+              />
+            </div>
+            <button 
+              onClick={handlePlaceBid}
+              disabled={isPlacingBid || !bidAmount}
+              className="w-full h-11 bg-[#CE2029] text-white font-bold text-sm rounded-md hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isPlacingBid ? "Placing Bid..." : "Place Bid"}
+            </button>
           </div>
-          <button 
-            onClick={handlePlaceBid}
-            disabled={isPlacingBid || !bidAmount}
-            className="w-full h-11 bg-[#CE2029] text-white font-bold text-sm rounded-md hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isPlacingBid ? "Placing Bid..." : "Place Bid"}
-          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 };
