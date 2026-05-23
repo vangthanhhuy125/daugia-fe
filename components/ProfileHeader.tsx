@@ -88,7 +88,9 @@ export const ProfileHeader = ({
         const blob = await response.blob();
         const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
         
-        await userService.updateProfile(undefined, undefined, file);
+        await userService.updateProfile({
+          avatarFile: file
+        });
 
         setCurrentAvatar(croppedImage); 
         setImageToCrop(null); 
@@ -111,16 +113,16 @@ export const ProfileHeader = ({
   return (
     <div className="bg-white rounded-[40px] shadow-[0_10px_50px_-12px_rgba(0,0,0,0.1)] border border-gray-100 overflow-hidden">
       {imageToCrop && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-xl rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b flex justify-between items-center">
-              <h3 className="text-xl font-[900] tracking-tight text-gray-900">Edit Profile Picture</h3>
-              <button onClick={handleCancel} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <X size={24} className="text-gray-500" />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-5 border-b flex justify-between items-center">
+              <h3 className="text-lg font-black tracking-tight text-gray-900">Edit Profile Picture</h3>
+              <button onClick={handleCancel} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
+                <X size={20} className="text-gray-500" />
               </button>
             </div>
             
-            <div className="relative h-[400px] w-full bg-gray-900">
+            <div className="relative h-72 w-full bg-gray-950">
               <Cropper
                 image={imageToCrop}
                 crop={crop}
@@ -134,9 +136,9 @@ export const ProfileHeader = ({
               />
             </div>
 
-            <div className="p-8 bg-white">
-                <div className="mb-8">
-                    <p className="text-xs font-black text-gray-400 tracking-widest mb-3">Zoom Level</p>
+            <div className="p-6 bg-white">
+                <div className="mb-6">
+                    <p className="text-xs font-black text-gray-400 tracking-widest mb-2">Zoom Level</p>
                     <input
                         type="range"
                         value={zoom}
@@ -144,22 +146,22 @@ export const ProfileHeader = ({
                         max={3}
                         step={0.1}
                         onChange={(e) => setZoom(Number(e.target.value))}
-                        className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-[#d32f2f]"
+                        className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-[#d32f2f]"
                     />
                 </div>
                 
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                     <button 
                         onClick={handleCancel}
-                        className="flex-1 px-6 py-4 rounded-2xl font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 transition-all text-xs tracking-widest"
+                        className="flex-1 px-5 py-3 rounded-xl font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 transition-all text-xs tracking-widest"
                     >
                         Cancel
                     </button>
                     <button 
                         onClick={handleConfirmCrop}
-                        className="flex-1 px-6 py-4 rounded-2xl font-[900] text-white bg-[#d32f2f] hover:bg-red-700 shadow-xl shadow-red-100 transition-all flex items-center justify-center gap-2 text-xs tracking-widest"
+                        className="flex-1 px-5 py-3 rounded-xl font-[900] text-white bg-[#d32f2f] hover:bg-red-700 shadow-lg shadow-red-100 transition-all flex items-center justify-center gap-2 text-xs tracking-widest"
                     >
-                        <Check size={18} strokeWidth={3} /> Save Changes
+                        <Check size={16} strokeWidth={3} /> Save Changes
                     </button>
                 </div>
             </div>

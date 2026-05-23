@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import { Users, Gavel, MousePointer2, Box } from "lucide-react";
 import { auctionService } from "@/services/auctionService";
 import { categoryService } from "@/services/categoryService";
+import { userService } from "@/services/userService";
+import { biddingService } from "@/services/biddingService";
 
 interface StatCardProps {
   label: string;
@@ -68,15 +70,35 @@ export const OverviewCards = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [auctionsRes, categoriesRes] = await Promise.all([
-          auctionService.searchAdmin({ size: 1 }),
+        const [usersRes, auctionsRes, categoriesRes] = await Promise.all([
+          userService.getAllUsers(0, 1),
+          auctionService.searchAdmin({ size: 1000 }),
           categoryService.getAll(0, 1)
         ]);
 
+        const auctionItems = auctionsRes.data?.content || [];
+        
+        let totalBidsCount = 0;
+
+        if (auctionItems.length > 0) {
+          const bidHistories = await Promise.all(
+            auctionItems.map(async (item: any) => {
+              try {
+                const historyRes = await biddingService.getImmutableHistory(item.id, 0, 1);
+                return historyRes.data?.totalElements || 0;
+              } catch {
+                return 0;
+              }
+            })
+          );
+          
+          totalBidsCount = bidHistories.reduce((sum, count) => sum + count, 0);
+        }
+
         setStats({
-          users: 0,
+          users: usersRes.data?.totalElements ?? 0,
           auctions: auctionsRes.data?.totalElements ?? 0,
-          bids: 0, 
+          bids: totalBidsCount, 
           categories: categoriesRes.data?.totalElements ?? 0
         });
       } catch (error) {
@@ -104,7 +126,7 @@ export const OverviewCards = () => {
           value={stats.auctions}
           icon={<Gavel size={30} strokeWidth={2.5} />}
           borderColor="border-yellow-500"
-        />
+         />
         <StatCard
           label="Total Bid"
           value={stats.bids}

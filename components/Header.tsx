@@ -88,19 +88,25 @@ const Header = () => {
     }
   };
 
+  const getLogoHref = () => {
+    if (!isLoggedIn) return "/";
+    if (role === "seller") return "/seller-profile";
+    if (role === "bidder") return "/bidder-home";
+    if (role === "admin") return "/admin-home";
+    return "/";
+  };
+
   return (
     <header className={`${jost.className} w-full bg-white border-b border-gray-100 sticky top-0 z-50`}>
       <div className="max-w-screen-xl mx-auto px-6 h-[70px] flex items-center justify-between">
         
-
-        <Link href="/" className="flex items-center gap-2">
+        <Link href={getLogoHref()} className="flex items-center gap-2">
           <div className="relative w-8 h-8 flex-shrink-0">
             <Image src="/logo-website.png" alt="Logo" fill className="object-contain" priority />
           </div>
           <span className="text-xl tracking-tighter">
             <span className="font-[900] text-[#1a1a1a]">Smart</span>
             <span className="font-light text-[#1a1a1a]">Auction</span>
-            
           </span>
         </Link>
 

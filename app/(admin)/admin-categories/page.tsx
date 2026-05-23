@@ -10,6 +10,7 @@ import { CreateCategoryModal } from "./CreateCategoryModal";
 import { EditCategoryModal } from "./EditCategoryModal";
 import { DeleteCategoryModal } from "./DeleteCategoryModal";
 import { categoryService } from "@/services/categoryService";
+import { auctionService } from "@/services/auctionService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -26,19 +27,36 @@ export default function AdminCategoriesPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditOpenModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
   const fetchCategories = async () => {
     try {
-      const res = await categoryService.getAll(0, 100);
-      const mapped = res.data.content.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description || "",
-        totalProducts: 0,
-      }));
+      const [categoryRes, auctionsRes] = await Promise.all([
+        categoryService.getAll(0, 100),
+        auctionService.searchAdmin({ size: 1000 })
+      ]);
+
+      const categoriesList = categoryRes.data?.content || [];
+      const auctionItems = auctionsRes.data?.content || [];
+
+      const mapped = categoriesList.map((cat: any) => {
+        // KIỂM TRA BÊN TRONG AUCTION CỦA BẠN DÙNG TRƯỜNG NÀO:
+        // Tình huống 1: So sánh bằng ID (Khuyên dùng)
+        const count = auctionItems.filter((auction: any) => auction.categoryId === cat.id).length;
+        
+        // Tình huống 2: Nếu Backend trong auction chỉ trả về tên categoryName, hãy bỏ comment dòng dưới:
+        // const count = auctionItems.filter((auction: any) => auction.categoryName === cat.name).length;
+
+        return {
+          id: cat.id,
+          name: cat.name,
+          description: cat.description || "",
+          totalProducts: count,
+        };
+      });
+
       setCategories(mapped);
     } catch (error) {
       console.error(error);
@@ -139,7 +157,7 @@ export default function AdminCategoriesPage() {
                             <button
                               onClick={() => {
                                 setSelectedCategory(cat);
-                                setIsEditModalOpen(true);
+                                setIsEditOpenModalOpen(true);
                               }}
                               className="text-gray-400 hover:text-blue-600 transition-colors"
                             >
@@ -182,7 +200,7 @@ export default function AdminCategoriesPage() {
       />
       <EditCategoryModal
         isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+        onClose={() => setIsEditOpenModalOpen(false)}
         category={selectedCategory}
         onUpdate={() => fetchCategories()}
       />

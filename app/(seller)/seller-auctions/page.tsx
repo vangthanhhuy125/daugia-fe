@@ -185,20 +185,25 @@ export default function SellerAuctionsPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div className="relative group">
-                  <input 
-                    type="text" 
-                    placeholder="Search by keywords..." 
+              <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+                <div className="flex-1 relative group">
+                  <input
+                    type="text"
+                    placeholder="Search by keywords..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className={`${filterInputClass} pl-12 h-12 bg-white border border-gray-200 focus:border-[#d32f2f]`} 
+                    className={`${filterInputClass} pl-12 h-12 bg-white border border-gray-200 focus:border-[#d32f2f]`}
                   />
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#d32f2f]" size={18} />
+                  <Search
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#d32f2f]"
+                    size={18}
+                  />
                 </div>
-                
-                <div className="space-y-1.5 custom-datepicker">
-                  <label className="text-xs font-bold text-gray-400 ml-2">From date:</label>
+
+                <div className="w-full lg:w-52 space-y-1.5 custom-datepicker">
+                  <label className="text-xs font-bold text-gray-400 ml-2">
+                    From date:
+                  </label>
                   <div className="relative">
                     <DatePicker
                       selected={startDate}
@@ -211,16 +216,21 @@ export default function SellerAuctionsPage() {
                       dateFormat="dd/MM/yyyy"
                       className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#d32f2f] transition-all"
                     />
-                    <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" size={18} />
+                    <Calendar
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+                      size={18}
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-1.5 custom-datepicker">
-                  <label className="text-xs font-bold text-gray-400 ml-2">To date:</label>
+                <div className="w-full lg:w-52 space-y-1.5 custom-datepicker">
+                  <label className="text-xs font-bold text-gray-400 ml-2">
+                    To date:
+                  </label>
                   <div className="relative">
                     <DatePicker
                       selected={endDate}
-                      onChange={handleEndDateChange} 
+                      onChange={handleEndDateChange}
                       selectsEnd
                       startDate={startDate}
                       endDate={endDate}
@@ -229,9 +239,19 @@ export default function SellerAuctionsPage() {
                       dateFormat="dd/MM/yyyy"
                       className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#d32f2f] transition-all"
                     />
-                    <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" size={18} />
+                    <Calendar
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+                      size={18}
+                    />
                   </div>
                 </div>
+
+                <button
+                  onClick={handleReset}
+                  className="h-12 w-12 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-[#d32f2f] hover:border-[#d32f2f] flex items-center justify-center transition-all active:scale-95 shrink-0"
+                >
+                  <RotateCcw size={18} strokeWidth={2.5} />
+                </button>
               </div>
 
               <div className="flex justify-between items-center">

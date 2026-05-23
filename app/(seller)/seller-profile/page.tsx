@@ -113,7 +113,7 @@ export default function SellerProfilePage() {
             const service = userService as any;
             if (typeof service.updateProfile === "function") {
               await service.updateProfile({
-                fullName: newData.fullname,
+                fullName: typeof newData.fullname === 'object' ? newData.fullname.value : newData.fullname,
                 phone: newData.phone,
                 street: translatedStreet,
                 province: translatedProvince,
@@ -121,14 +121,17 @@ export default function SellerProfilePage() {
               });
             }
 
-            setUserData({
-              fullname: newData.fullname,
-              email: newData.email,
-              phone: newData.phone,
-              street: translatedStreet,
-              province: translatedProvince,
-              ward: translatedWard,
-            });
+            const profileRes = await userService.getMe();
+            if (profileRes?.data) {
+              setUserData({
+                fullname: profileRes.data.fullName,
+                email: profileRes.data.email,
+                phone: profileRes.data.phone,
+                street: profileRes.data.street,
+                province: profileRes.data.province,
+                ward: profileRes.data.ward,
+              });
+            }
 
           } catch (error) {
             console.error("Failed to update profile data", error);

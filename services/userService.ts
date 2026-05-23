@@ -60,21 +60,23 @@ export const userService = {
     return userService.getMe();
   },
 
-  updateProfile: (
-    fullName?: string,
-    phone?: string,
-    avatarFile?: File,
-    street?: string,
-    ward?: string,
-    province?: string
-  ): Promise<ApiResponse<UserDto>> => {
+  updateProfile: (data: {
+    fullName?: string;
+    phone?: string;
+    avatarFile?: File;
+    street?: string;
+    ward?: string;
+    province?: string;
+  }): Promise<ApiResponse<UserDto>> => {
     const formData = new FormData();
-    if (fullName) formData.append("fullName", fullName);
-    if (phone) formData.append("phone", phone);
-    if (avatarFile) formData.append("avatar", avatarFile);
-    if (street !== undefined) formData.append("street", street);
-    if (ward !== undefined) formData.append("ward", ward);
-    if (province !== undefined) formData.append("province", province);
+    if (data.fullName) formData.append("fullName", data.fullName);
+    if (data.phone) formData.append("phone", data.phone);
+    if (data.avatarFile) formData.append("avatar", data.avatarFile);
+    if (data.street !== undefined) formData.append("street", data.street);
+    if (data.ward !== undefined) formData.append("ward", data.ward);
+    if (data.province !== undefined) formData.append("province", data.province);
+
+    clearProfileCache();
 
     return apiClient.put("/users/profile", formData, {
       headers: {

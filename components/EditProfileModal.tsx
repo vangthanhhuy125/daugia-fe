@@ -80,19 +80,23 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
     setIsSubmitting(true);
 
     try {
-      await userService.updateProfile(
-        formData.fullname,
-        formData.phone,
-        undefined,
-        formData.street,
-        formData.ward,
-        formData.province
-      );
+      await userService.updateProfile({
+        fullName: formData.fullname,
+        phone: formData.phone,
+        street: formData.street,
+        ward: formData.ward,
+        province: formData.province
+      });
+
+      alert("Profile updated successfully!");
       onConfirm(formData);
       onClose();
-    } catch (error) {
+      window.location.reload();
+    } catch (error: any) {
       console.error(error);
-    } finally {
+      alert(error.response?.data?.message || error.message || "Failed to update profile.");
+      window.location.reload();
+    } {
       setIsSubmitting(false);
     }
   };
@@ -147,7 +151,6 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
         </div>
 
         <div className="space-y-5">
-          {/* Fullname */}
           <div className="flex items-center gap-3">
             <label className={labelClass}>Fullname:</label>
             <input 
@@ -158,7 +161,6 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
             />
           </div>
 
-          {/* Email */}
           <div className="flex items-center gap-3">
             <label className={labelClass}>Email:</label>
             <span className="text-base font-medium text-gray-900 underline px-2 italic">
@@ -166,7 +168,6 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
             </span>
           </div>
 
-          {/* Phone */}
           <div className="flex items-center gap-3">
             <label className={labelClass}>Phone number:</label>
             <input 
@@ -177,7 +178,6 @@ export const EditProfileModal = ({ isOpen, onClose, onConfirm, initialData }: Ed
             />
           </div>
 
-          {/* Address Section */}
           <div className="space-y-4 pt-2">
             <label className="text-lg font-bold text-gray-900 block">Address:</label>
             

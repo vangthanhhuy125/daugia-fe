@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { X, Trash2, ImagePlus, Calendar, ChevronDown } from "lucide-react";
+import { X, Trash2, ImagePlus, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import Image from "next/image";
 import { Jost } from "next/font/google";
 import DatePicker from "react-datepicker";
@@ -36,6 +36,7 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
   const [startMin, setStartMin] = useState("");
   const [endHour, setEndHour] = useState("");
   const [endMin, setEndMin] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   const mainInputRef = useRef<HTMLInputElement>(null);
   const thumbInputRef = useRef<HTMLInputElement>(null);
@@ -106,7 +107,31 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
     return `${year}-${month}-${day}T${hours}:${minutes}:00`;
   };
 
+  const handleStepPrice = (field: "starting" | "increment" | "buynow", direction: "up" | "down") => {
+    let currentVal = 0;
+    let setter: (val: string) => void;
+
+    if (field === "starting") {
+      currentVal = Number(startingPrice) || 0;
+      setter = setStartingPrice;
+    } else if (field === "increment") {
+      currentVal = Number(bidIncrement) || 0;
+      setter = setBidIncrement;
+    } else {
+      currentVal = Number(buyNowPrice) || 0;
+      setter = setBuyNowPrice;
+    }
+
+    const step = 1000;
+    let newVal = direction === "up" ? currentVal + step : currentVal - step;
+    if (newVal < 0) newVal = 0;
+
+    setter(newVal === 0 && field === "buynow" ? "" : newVal.toString());
+  };
+
   const handleCreate = async () => {
+    if (isCreating) return;
+
     try {
       if (!productName || !selectedCategoryId || !startingPrice || !bidIncrement) {
         alert("Please fill in all required fields.");
@@ -136,6 +161,8 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
         return;
       }
 
+      setIsCreating(true);
+
       const requestData = {
         productName,
         description,
@@ -158,6 +185,8 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
       const apiErrorMsg = error?.response?.data?.message || error?.response?.data?.error;
       const systemErrorMsg = error?.message;
       alert(`Error creating auction: ${apiErrorMsg || systemErrorMsg || "Unknown error"}`);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -283,7 +312,7 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
                     Starting price:
                   </label>
 
-                  <div className="relative">
+                  <div className="relative flex items-center h-12 border border-gray-400 rounded-full pl-4 pr-10 bg-white focus-within:border-blue-600 transition-colors">
                     <input
                       type="number"
                       min={1000}
@@ -291,12 +320,20 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
                       value={startingPrice}
                       onChange={(e) => setStartingPrice(e.target.value)}
                       placeholder="Enter amount"
-                      className="w-full h-12 border border-gray-400 rounded-full pl-4 pr-16 outline-none focus:border-blue-600 font-medium text-gray-900 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-full h-full outline-none font-medium text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none bg-transparent"
                     />
 
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">
+                    <span className="text-sm font-bold text-gray-400 pointer-events-none whitespace-nowrap px-1">
                       VND
                     </span>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col -space-y-1">
+                      <button type="button" onClick={() => handleStepPrice("starting", "up")} className="hover:text-blue-600 text-gray-400 transition-colors">
+                        <ChevronUp size={14} strokeWidth={3} />
+                      </button>
+                      <button type="button" onClick={() => handleStepPrice("starting", "down")} className="hover:text-blue-600 text-gray-400 transition-colors">
+                        <ChevronDown size={14} strokeWidth={3} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -305,7 +342,7 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
                     Bid increment:
                   </label>
 
-                  <div className="relative">
+                  <div className="relative flex items-center h-12 border border-gray-400 rounded-full pl-4 pr-10 bg-white focus-within:border-blue-600 transition-colors">
                     <input
                       type="number"
                       min={1000}
@@ -313,12 +350,20 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
                       value={bidIncrement}
                       onChange={(e) => setBidIncrement(e.target.value)}
                       placeholder="Enter amount"
-                      className="w-full h-12 border border-gray-400 rounded-full pl-4 pr-16 outline-none focus:border-blue-600 font-medium text-gray-900 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-full h-full outline-none font-medium text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none bg-transparent"
                     />
 
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">
+                    <span className="text-sm font-bold text-gray-400 pointer-events-none whitespace-nowrap px-1">
                       VND
                     </span>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col -space-y-1">
+                      <button type="button" onClick={() => handleStepPrice("increment", "up")} className="hover:text-blue-600 text-gray-400 transition-colors">
+                        <ChevronUp size={14} strokeWidth={3} />
+                      </button>
+                      <button type="button" onClick={() => handleStepPrice("increment", "down")} className="hover:text-gray-400 hover:text-blue-600 transition-colors">
+                        <ChevronDown size={14} strokeWidth={3} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -329,7 +374,7 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
                     Buy now price:
                   </label>
 
-                  <div className="relative">
+                  <div className="relative flex items-center h-12 border border-gray-400 rounded-full pl-4 pr-10 bg-white focus-within:border-blue-600 transition-colors">
                     <input
                       type="number"
                       min={1000}
@@ -337,12 +382,20 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
                       value={buyNowPrice}
                       onChange={(e) => setBuyNowPrice(e.target.value)}
                       placeholder="Enter amount"
-                      className="w-full h-12 border border-gray-400 rounded-full pl-4 pr-16 outline-none focus:border-blue-600 font-medium text-gray-900 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-full h-full outline-none font-medium text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none bg-transparent"
                     />
 
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">
+                    <span className="text-sm font-bold text-gray-400 pointer-events-none whitespace-nowrap px-1">
                       VND
                     </span>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col -space-y-1">
+                      <button type="button" onClick={() => handleStepPrice("buynow", "up")} className="hover:text-blue-600 text-gray-400 transition-colors">
+                        <ChevronUp size={14} strokeWidth={3} />
+                      </button>
+                      <button type="button" onClick={() => handleStepPrice("buynow", "down")} className="hover:text-blue-600 text-gray-400 transition-colors">
+                        <ChevronDown size={14} strokeWidth={3} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -462,8 +515,16 @@ export const CreateAuctionModal = ({ isOpen, onClose }: CreateAuctionModalProps)
               </div>
 
               <div className="flex justify-center mt-6 pb-2">
-                <button onClick={handleCreate} className="bg-blue-600 text-white font-[900] w-40 py-4 rounded-full text-lg shadow-xl shadow-blue-600/30 hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all">
-                  Create
+                <button 
+                  onClick={handleCreate} 
+                  disabled={isCreating}
+                  className="bg-blue-600 text-white font-[900] w-40 py-4 rounded-full text-lg shadow-xl shadow-blue-600/30 hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isCreating ? (
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    "Create"
+                  )}
                 </button>
               </div>
 

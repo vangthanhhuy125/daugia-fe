@@ -33,7 +33,7 @@ interface UserDetailsModalProps {
 export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsModalProps) {
   const [view, setView] = useState<"details" | "block-confirm" | "unlock-review">("details");
   const [blockReason, setBlockReason] = useState("");
-  const [unlockRequestContent, setUnlockRequestContent] = useState(""); // Lưu lý do xin mở khóa thực tế của user
+  const [unlockRequestContent, setUnlockRequestContent] = useState("");
   const [unlockResponse, setUnlockResponse] = useState("");
   const [confirmAction, setConfirmAction] = useState<null | "block" | "unlock" | "reject">(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -45,7 +45,7 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
     if (isOpen && user?.id) {
       setView("details");
       setBlockReason("");
-      setUnlockRequestContent(""); // Reset nội dung đơn
+      setUnlockRequestContent(""); 
       setUnlockResponse("");
       setConfirmAction(null);
       setIsSubmitting(false);
@@ -55,15 +55,12 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
         .then(res => setRealUserDetail(res.data))
         .catch(console.error);
 
-      // Kéo mảng logs về để check mốc thời gian thực tế
       userService.getAccountLogs(user.id, 0, 50)
         .then(res => {
           const logs = res.data?.content || [];
           
           if (logs.length > 0) {
-            // Tìm bản ghi khóa tài khoản gần nhất của Admin
             const latestLockLog = logs.find((log: any) => log.action === "LOCK");
-            // Tìm bản ghi gửi đơn xin cứu xét gần nhất của User
             const latestRequestLog = logs.find(
               (log: any) => log.action === "REQUEST_UNLOCK" || log.reason?.toLowerCase().includes("request")
             );
@@ -73,19 +70,16 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
               setIsUserActuallyLocked(true);
             }
 
-            // KIỂM TRA MỐC THỜI GIAN LOGIC: 
             if (latestRequestLog && latestLockLog) {
               const lockTime = new Date(latestLockLog.createdAt).getTime();
               const requestTime = new Date(latestRequestLog.createdAt).getTime();
 
-              // Chuẩn bài: Thời gian gửi đơn (requestTime) phải diễn ra SAU thời gian bị khóa (lockTime)
               if (requestTime > lockTime) {
                 setUnlockRequestContent(latestRequestLog.reason || "I believe my account was locked by mistake.");
               } else {
-                setUnlockRequestContent(""); // Đơn cũ trước khi bị khóa lần này -> Không tính
+                setUnlockRequestContent(""); 
               }
             } else if (latestRequestLog && !latestLockLog) {
-              // Trường hợp hiếm: Có đơn gửi nhưng ko tìm thấy log lock
               setUnlockRequestContent(latestRequestLog.reason || "I believe my account was locked by mistake.");
             }
           }
@@ -124,11 +118,9 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
     address: getFullAddress(), 
     status: isBlocked ? "Blocked" : "Active", 
     lockReason: blockReason || "No details provided.",
-    // Gán dữ liệu đơn xin thực tế sau khi đã kiểm tra mốc thời gian logic thành công
     requestReason: unlockRequestContent || "N/A - User has not submitted an unlock request yet.",
   };
 
-  // Nút bấm Unlock Request ở màn hình details chỉ sáng đèn khi user THỰC SỰ có gửi đơn sau giờ khóa
   const hasUnlock = user.hasUnlockRequest || unlockRequestContent !== "";
 
   const handleBlockClick = () => setView("block-confirm");

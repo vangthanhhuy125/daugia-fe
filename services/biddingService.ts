@@ -48,6 +48,6 @@ export const biddingService = {
   },
 
   getOwnAutoBid: (auctionId: string) => {
-  return apiClient.get(`/auctions/${auctionId}/auto-bid`);
-}
+    return apiClient.get(`/auctions/${auctionId}/auto-bid`);
+  }
 };
