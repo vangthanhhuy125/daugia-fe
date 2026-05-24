@@ -2,13 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { biddingService } from "@/services/biddingService";
+import { BuyNowReservationStatus } from "@/types/payment";
+import { ReservationBanner } from "./ReservationBanner";
 
 interface LiveViewProps {
   infoRows: { label: string; value: any; statusColor?: string }[];
   auctionDetail?: any;
+  reservationStatus?: BuyNowReservationStatus | null;
 }
 
-export const LiveView = ({ infoRows, auctionDetail }: LiveViewProps) => {
+export const LiveView = ({ infoRows, auctionDetail, reservationStatus }: LiveViewProps) => {
   const [timeLeft, setTimeLeft] = useState("Loading...");
   const [bidAmount, setBidAmount] = useState("");
   const [autoBidAmount, setAutoBidAmount] = useState("");
@@ -102,6 +105,12 @@ export const LiveView = ({ infoRows, auctionDetail }: LiveViewProps) => {
 
   return (
     <div className="space-y-6">
+      {reservationStatus?.isOwner && (
+        <ReservationBanner 
+          remainingSeconds={reservationStatus.remainingSeconds || 300}
+          paymentUrl={reservationStatus.paymentUrl}
+        />
+      )}
       <div className="space-y-2">
         <p className="text-[#CE2029] font-bold text-sm">Auction Time Remaining:</p>
         <div className="w-full py-4 px-6 border border-gray-300 rounded-md flex justify-center items-center">
