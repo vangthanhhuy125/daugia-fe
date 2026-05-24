@@ -2,13 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { biddingService } from "@/services/biddingService";
+import { BuyNowReservationStatus } from "@/types/payment";
+import { ReservationBanner } from "./ReservationBanner";
 
 interface LiveViewProps {
   infoRows: { label: string; value: any; statusColor?: string }[];
   auctionDetail?: any;
+  reservationStatus?: BuyNowReservationStatus | null;
 }
 
-export const LiveView = ({ infoRows, auctionDetail }: LiveViewProps) => {
+export const LiveView = ({ infoRows, auctionDetail, reservationStatus }: LiveViewProps) => {
   const [timeLeft, setTimeLeft] = useState("Loading...");
   const [bidAmount, setBidAmount] = useState("");
   const [autoBidAmount, setAutoBidAmount] = useState("");
@@ -60,20 +63,39 @@ export const LiveView = ({ infoRows, auctionDetail }: LiveViewProps) => {
 
   const handlePlaceBid = async () => {
     if (!bidAmount || !auctionDetail?.id) return;
-    
-    if (Number(bidAmount) < minValidBid) {
+
+    const targetAmount = Number(bidAmount);
+
+    if (targetAmount < minValidBid) {
       alert(`Your bid must be at least ${minValidBid.toLocaleString()} VND!`);
+      return;
+    }
+
+    const difference = targetAmount - currentHighest;
+
+    if (Math.round(difference) % Math.round(bidIncrement) !== 0) {
+      alert(
+        `Your bid amount must equal [Current Highest Bid] + n * [Price Step] (where n is a whole number). Each step is ${bidIncrement.toLocaleString()} VND!`
+      );
       return;
     }
 
     try {
       setIsPlacingBid(true);
-      await biddingService.placeBid(auctionDetail.id, { amount: Number(bidAmount) });
+
+      await biddingService.placeBid(auctionDetail.id, {
+        amount: targetAmount,
+      });
+
       alert("Bid placed successfully!");
       window.location.reload();
     } catch (error: any) {
       console.error(error);
-      alert(error.response?.data?.message || error.message || "Failed to place bid");
+      alert(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to place bid"
+      );
     } finally {
       setIsPlacingBid(false);
     }
@@ -81,20 +103,41 @@ export const LiveView = ({ infoRows, auctionDetail }: LiveViewProps) => {
 
   const handleEnableAutoBid = async () => {
     if (!autoBidAmount || !auctionDetail?.id) return;
-    
-    if (Number(autoBidAmount) <= minValidBid) {
-      alert(`Maximum auto bid must be greater than ${minValidBid.toLocaleString()} VND!`);
+
+    const targetAutoAmount = Number(autoBidAmount);
+
+    if (targetAutoAmount <= minValidBid) {
+      alert(
+        `Maximum auto bid must be greater than ${minValidBid.toLocaleString()} VND!`
+      );
+      return;
+    }
+
+    const difference = targetAutoAmount - currentHighest;
+
+    if (Math.round(difference) % Math.round(bidIncrement) !== 0) {
+      alert(
+        `Your auto bid amount must equal [Current Highest Bid] + n * [Price Step] (where n is a whole number). Each step is ${bidIncrement.toLocaleString()} VND!`
+      );
       return;
     }
 
     try {
       setIsSettingAutoBid(true);
-      await biddingService.createAutoBid(auctionDetail.id, { maxAmount: Number(autoBidAmount) });
+
+      await biddingService.createAutoBid(auctionDetail.id, {
+        maxAmount: targetAutoAmount,
+      });
+
       alert("Auto bid configured successfully!");
       window.location.reload();
     } catch (error: any) {
       console.error(error);
-      alert(error.response?.data?.message || error.message || "Failed to setup auto bid");
+      alert(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to setup auto bid"
+      );
     } finally {
       setIsSettingAutoBid(false);
     }
@@ -102,6 +145,12 @@ export const LiveView = ({ infoRows, auctionDetail }: LiveViewProps) => {
 
   return (
     <div className="space-y-6">
+      {reservationStatus?.isOwner && (
+        <ReservationBanner 
+          remainingSeconds={reservationStatus.remainingSeconds || 300}
+          paymentUrl={reservationStatus.paymentUrl}
+        />
+      )}
       <div className="space-y-2">
         <p className="text-[#CE2029] font-bold text-sm">Auction Time Remaining:</p>
         <div className="w-full py-4 px-6 border border-gray-300 rounded-md flex justify-center items-center">

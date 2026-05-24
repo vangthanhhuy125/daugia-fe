@@ -69,16 +69,24 @@ export default function SellerAuctionsPage() {
         const fullDateTimeStr = targetDate 
           ? new Date(targetDate).toLocaleString('en-GB', { hour12: false }).replace(',', '') 
           : "01/01/1900 00:00:00";
+        
+        let rawPrice = item.startingPrice || 0; 
+        if (displayStatus === "Live") {
+          rawPrice = item.currentPrice || 0; 
+        } else if (displayStatus === "Ended & Rejected") {
+          rawPrice = item.currentPrice || 0; 
+        }
 
         return {
           id: item.id.toString(),
           title: item.productName,
           category: item.categoryName || "Electronics",
           time: fullDateTimeStr,
-          price: `${item.startingPrice?.toLocaleString()} VND`,
+          price: `${rawPrice.toLocaleString()} VND`,
           priceLabel: label,
           image: item.thumbnailUrl || "/laptop-image.png",
-          status: displayStatus
+          status: displayStatus,
+          rawStatus: item.status
         };
       });
       setAllAuctions(mapped);
@@ -299,6 +307,7 @@ export default function SellerAuctionsPage() {
                     price={item.price}
                     priceLabel={item.priceLabel}
                     status={item.status === "Upcoming & Pending" ? "upcoming" : item.status === "Live" ? "live" : "ended"}
+                    {...{ rawStatus: item.rawStatus } as any}
                     onDetailsClick={handleDetailsClick}
                   />
                 ))

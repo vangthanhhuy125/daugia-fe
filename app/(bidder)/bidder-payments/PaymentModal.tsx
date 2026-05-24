@@ -105,58 +105,59 @@ const PaymentModal = ({ isOpen, onClose, data }: PaymentModalProps) => {
 
           <div className="space-y-4">
             <h3 className="text-xl font-black text-gray-900">{auctionDetail?.productName || data.title}</h3>
-            <div className="border border-gray-100 rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-500">Amount</span>
-                <span className="text-sm font-black text-gray-900">{data.amount}</span>
-              </div>
-            </div>
 
             {isLoadingDetail && <div className="text-sm font-bold text-gray-500">Loading details...</div>}
             {detailError && <div className="text-sm font-bold text-red-600">{detailError}</div>}
 
             {auctionDetail && (
               <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-start gap-4">
+                  <span className="font-bold text-[#d32f2f] whitespace-nowrap text-[15px]">Description:</span>
+                  <span className="text-right text-gray-900">
+                    {auctionDetail?.description || ""}
+                  </span>
+                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[#CE2029] font-bold text-sm whitespace-nowrap">Amount:</span>
+                <span className="font-bold text-sm text-[#CE2029]">{data.amount}</span>
+              </div>
                 <div className="flex justify-between gap-4">
-                  <span className="font-bold text-gray-500">Starting price:</span>
-                  <span className="font-bold text-gray-900">{auctionDetail.startingPrice?.toLocaleString()} VND</span>
+                  <span className="text-[#CE2029] font-bold text-sm whitespace-nowrap">Starting price:</span>
+                  <span className="text-gray-900">{auctionDetail.startingPrice?.toLocaleString()} VND</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="font-bold text-gray-500">Current price:</span>
-                  <span className="font-bold text-gray-900">{auctionDetail.currentPrice?.toLocaleString()} VND</span>
+                  <span className="text-[#CE2029] font-bold text-sm whitespace-nowrap">Current price:</span>
+                  <span className="text-gray-900">{auctionDetail.currentPrice?.toLocaleString()} VND</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="font-bold text-gray-500">Bid increment:</span>
-                  <span className="font-bold text-gray-900">{auctionDetail.bidIncrement?.toLocaleString()} VND</span>
+                  <span className="text-[#CE2029] font-bold text-sm whitespace-nowrap">Bid increment:</span>
+                  <span className="text-gray-900">{auctionDetail.bidIncrement?.toLocaleString()} VND</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="font-bold text-gray-500">Buy now price:</span>
-                  <span className="font-bold text-gray-900">
+                  <span className="text-[#CE2029] font-bold text-sm whitespace-nowrap">Buy now price:</span>
+                  <span className="text-gray-900">
                     {auctionDetail.buyNowPrice ? `${auctionDetail.buyNowPrice.toLocaleString()} VND` : "N/A"}
                   </span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="font-bold text-gray-500">Status:</span>
-                  <span className="font-bold text-gray-900">{auctionDetail.status}</span>
+                  <span className="text-[#CE2029] font-bold text-sm whitespace-nowrap">Status:</span>
+                  <span className="text-gray-900">{auctionDetail.status}</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="font-bold text-gray-500">Category:</span>
-                  <span className="font-bold text-gray-900">{auctionDetail.categoryName}</span>
+                  <span className="text-[#CE2029] font-bold text-sm whitespace-nowrap">Category:</span>
+                  <span className="text-gray-900">{auctionDetail.categoryName}</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="font-bold text-gray-500">Bidding start:</span>
-                  <span className="font-bold text-gray-900">
+                  <span className="text-[#CE2029] font-bold text-sm whitespace-nowrap">Bidding start:</span>
+                  <span className="text-gray-900">
                     {auctionDetail.biddingStartTime ? new Date(auctionDetail.biddingStartTime).toLocaleString("en-GB") : "N/A"}
                   </span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="font-bold text-gray-500">Bidding end:</span>
-                  <span className="font-bold text-gray-900">
+                  <span className="text-[#CE2029] font-bold text-sm whitespace-nowrap">Bidding end:</span>
+                  <span className="text-gray-900">
                     {auctionDetail.biddingEndTime ? new Date(auctionDetail.biddingEndTime).toLocaleString("en-GB") : "N/A"}
                   </span>
-                </div>
-                <div className="pt-2 text-gray-700 text-xs leading-relaxed">
-                  {auctionDetail.description}
                 </div>
               </div>
             )}

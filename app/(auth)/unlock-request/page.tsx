@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Jost } from "next/font/google";
 import { authService } from "@/services/authService";
-import { userService } from "@/services/userService"; 
 
 const jost = Jost({
   subsets: ["latin"],
@@ -27,23 +26,10 @@ export default function UnlockAccountPage() {
     setIsLoading(true);
 
     try {
-      const usersRes = await userService.getAllUsers(0, 1000);
-      const allUsers = usersRes.data?.content || [];
-      
-      const matchedUser = allUsers.find(
-        (u: any) => u.email?.toLowerCase().trim() === email.toLowerCase().trim()
-      );
-
-      if (!matchedUser) {
-        throw new Error("This email address does not exist in our system. Please check again!");
-      }
-
-      const finalName = fullName.trim() || matchedUser.fullName || "Unknown User";
-
+      // 🌟 KHÔNG gọi API getAllUsers nữa. Đẩy trực tiếp thông tin lên Backend xử lý.
       await (authService as any).unlockAccount({ 
-        userId: matchedUser.id, 
-        fullName: finalName, 
-        email: email.trim(), 
+        fullName: fullName.trim() || "Unknown User", 
+        email: email.trim().toLowerCase(), 
         reason: reason.trim(),
         action: "REQUEST_UNLOCK" 
       });
@@ -53,7 +39,12 @@ export default function UnlockAccountPage() {
       setEmail("");
       setReason("");
     } catch (err: any) {
-      setError(err.message || "Failed to submit unlock request. Please try again.");
+      // Lấy câu báo lỗi chuẩn từ Backend trả về hoặc lỗi hệ thống
+      const errMsg = err.response?.data?.message || err.message || "Failed to submit unlock request. Please try again.";
+      setError(errMsg);
+      
+      // Sử dụng alert để chặn luồng trình duyệt lại, giúp bồ đọc được chính xác lỗi (ví dụ: Email not found) trước khi bị interceptor can thiệp
+      alert(`Submission Error: ${errMsg}`);
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +52,6 @@ export default function UnlockAccountPage() {
 
   return (
     <div className={`${jost.className} flex min-h-screen bg-white`}>
-      
       <div className="hidden lg:block lg:w-1/3 relative">
         <Image
           src="/nen.jpg" 
@@ -74,7 +64,6 @@ export default function UnlockAccountPage() {
       </div>
 
       <div className="w-full lg:w-2/3 flex flex-col justify-center px-8 md:px-20 lg:px-32 py-10 relative">
-        
         <div className="absolute top-14 left-12 md:left-24 lg:left-32">
           <Link href="/home" className="flex items-center gap-2 group">
             <div className="relative w-10 h-10 transition-transform group-hover:rotate-12">
