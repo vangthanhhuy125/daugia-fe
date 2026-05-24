@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
 
     try {
       await authService.forgotPassword({ email });
-      router.push(`/verify?email=${encodeURIComponent(email)}&type=forgot`);
+      router.push(`/create-password?email=${encodeURIComponent(email)}`);
     } catch (err: any) {
       setError(err.message || "Failed to send verification code.");
     } finally {

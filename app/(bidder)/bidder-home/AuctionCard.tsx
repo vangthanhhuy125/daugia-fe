@@ -28,7 +28,7 @@ export const AuctionCard = ({
 }: AuctionCardProps) => (
   <div className={`${jost.className} group w-full bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col items-center text-center`}>
 
-    <p className="text-gray-400 text-xs">{label}</p>
+    <p className="font-bold text-gray-400 text-base line-clamp-3 px-2">{label}</p>
 
     <p className="text-[#1a1a1a] font-bold text-sm md:text-base mb-3">
       {time}

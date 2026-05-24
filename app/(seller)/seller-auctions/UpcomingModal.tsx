@@ -137,9 +137,7 @@ export const UpcomingModal = ({ isOpen, onClose, auctionId }: UpcomingModalProps
                   Remaining time for the auction to begin:
                 </p>
                 <div className="border border-gray-300 rounded-none p-4 text-center">
-                  <span className="text-xl font-medium text-gray-900 tracking-wide font-mono">
-                    {timeLeft}
-                  </span>
+                  <span className="text-xl font-medium text-gray-900 tracking-wide">{timeLeft}</span>
                 </div>
               </div>
 

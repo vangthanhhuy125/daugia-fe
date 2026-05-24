@@ -29,13 +29,13 @@ export const AuctionSection = ({ id, title, statusFilter }: SectionProps) => {
           let priceLabel = "Starting Price";
           
           if (statusFilter === "ACTIVE") {
-            label = "Live";
+            label = "Auction End Time";
             priceLabel = "Current Bid";
           } else if (statusFilter === "ENDED") {
-            label = "Ended";
+            label = "Auction End Time";
             priceLabel = "Final Bid";
           } else if (statusFilter === "APPROVED") {
-            label = "Upcoming";
+            label = "Auction Time";
             priceLabel = "Starting Price";
           }
 

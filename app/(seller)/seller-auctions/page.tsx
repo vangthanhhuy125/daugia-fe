@@ -20,6 +20,7 @@ import { EndedModal } from "./EndedModal";
 import { auctionService } from "@/services/auctionService";
 import { userService } from "@/services/userService";
 import { UserDto } from "@/types/user";
+import { useAuth } from "@/app/context/AuthContext";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
@@ -61,13 +62,19 @@ export default function SellerAuctionsPage() {
         if (displayStatus === "Live") label = "Current Bid";
         if (displayStatus === "Ended & Rejected") label = "Winning Bid";
 
-        const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : "";
+        const targetDate = (item.status === "ENDED" || item.status === "ACTIVE")
+          ? item.biddingEndTime
+          : item.biddingStartTime;
+
+        const fullDateTimeStr = targetDate 
+          ? new Date(targetDate).toLocaleString('en-GB', { hour12: false }).replace(',', '') 
+          : "01/01/1900 00:00:00";
 
         return {
           id: item.id.toString(),
           title: item.productName,
           category: item.categoryName || "Electronics",
-          time: dateStr ? `${dateStr} 00:00:00` : "10/3/2026 09:00:00",
+          time: fullDateTimeStr,
           price: `${item.startingPrice?.toLocaleString()} VND`,
           priceLabel: label,
           image: item.thumbnailUrl || "/laptop-image.png",

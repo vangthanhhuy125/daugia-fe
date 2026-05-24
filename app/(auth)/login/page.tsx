@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Jost } from "next/font/google";
@@ -8,7 +8,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { authService } from "@/services/authService";
 import { decodeJwt } from "@/utils/auth";
-import { X } from "lucide-react"; // Import thêm X icon để làm nút đóng modal
+import { X } from "lucide-react";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -21,9 +21,23 @@ export default function LoginPage() {
   
   const [identity, setIdentity] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   
-  // Trạng thái điều khiển ẩn/hiện Modal thông báo Khóa tài khoản
+  // State lưu trữ danh sách các email đã từng "Remember"
+  const [savedEmails, setSavedEmails] = useState<string[]>([]);
   const [isLockedModalOpen, setIsLockedModalOpen] = useState(false);
+
+  // Lấy danh sách email đã lưu từ localStorage khi tải trang (không auto-fill vào ô input)
+  useEffect(() => {
+    const emailsJson = localStorage.getItem("rememberedEmailsList");
+    if (emailsJson) {
+      try {
+        setSavedEmails(JSON.parse(emailsJson));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,32 +49,41 @@ export default function LoginPage() {
       });
 
       const { access_token, refresh_token, role } = response.data;
+      const normalizedRole = role.toLowerCase();
+      const payload = decodeJwt(access_token);
+      const userId = payload?.sub || undefined;
 
-      localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);
 
-      const payload = decodeJwt(access_token);
-      if (payload?.sub) {
-        localStorage.setItem("userId", payload.sub);
+      if (rememberMe) {
+        let updatedEmails = [...savedEmails];
+        if (!updatedEmails.includes(identity)) {
+          updatedEmails.push(identity);
+        }
+        localStorage.setItem("rememberedEmailsList", JSON.stringify(updatedEmails));
       }
 
-      const normalizedRole = role.toLowerCase();
-      login({ role: normalizedRole, token: access_token });
+      login({ 
+        role: normalizedRole, 
+        token: access_token, 
+        userId: userId 
+      });
+
+      localStorage.removeItem("auth-storage");
+      localStorage.removeItem("cached_user_profile");
 
       if (normalizedRole === "admin") {
-        router.push("/admin-home");
+        window.location.href = "/admin-home";
       } else if (normalizedRole === "seller") {
-        router.push("/seller-profile");
+        window.location.href = "/seller-profile";
       } else {
-        router.push("/bidder-home");
+        window.location.href = "/bidder-home";
       }
     } catch (err: any) {
-      // BẪY LỖI: Kiểm tra xem lỗi trả về từ Backend có phải là trạng thái LOCKED không
       const errorMsg = err.message || err.data?.message || "";
       const isLockedStatus = err.status === 423 || errorMsg.toLowerCase().includes("lock");
 
       if (isLockedStatus) {
-        // Nếu dính lỗi khóa, bung ngay modal thông báo lên màn hình thay vì alert thông thường
         setIsLockedModalOpen(true);
       } else {
         alert(errorMsg || "Invalid credentials");
@@ -147,12 +170,18 @@ export default function LoginPage() {
               </label>
               <input
                 type="text"
+                list="remembered-emails"
                 value={identity}
                 onChange={(e) => setIdentity(e.target.value)}
                 placeholder="Enter your email"
                 className="w-full h-14 bg-[#e0e0e0] rounded-full px-6 outline-none focus:ring-2 ring-blue-600 transition"
                 required
               />
+              <datalist id="remembered-emails">
+                {savedEmails.map((email, index) => (
+                  <option key={index} value={email} />
+                ))}
+              </datalist>
             </div>
 
             <div className="space-y-2">
@@ -173,6 +202,8 @@ export default function LoginPage() {
               <label className="flex items-center gap-2 cursor-pointer group">
                 <input
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm font-medium text-gray-600 group-hover:text-black">

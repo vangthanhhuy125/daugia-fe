@@ -10,10 +10,12 @@ import { FeedbackModal } from "@/components/FeedbackModal";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { CreateAuctionModal } from "@/components/CreateAuctionModal";
 import { userService } from "@/services/userService";
+import { useAuth } from "@/app/context/AuthContext";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
 export default function SellerProfilePage() {
+  const { isLoggedIn } = useAuth();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -30,11 +32,15 @@ export default function SellerProfilePage() {
   });
 
   useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    
+    if (!token && !isLoggedIn) return;
+
     userService.getMe()
       .then((res) => {
         if (res.data) {
           setUserData({
-            fullname: res.data.fullName || "",
+            fullname: res.data.fullName || "", 
             email: res.data.email || "",
             phone: res.data.phone || "",
             street: res.data.street || "",
@@ -47,8 +53,10 @@ export default function SellerProfilePage() {
           }
         }
       })
-      .catch(console.error);
-  }, []);
+      .catch((err) => {
+        console.error("Fetch profile error: ", err);
+      });
+  }, [isLoggedIn]); 
 
   const profileData = [
     { label: "Fullname:", value: userData.fullname },
@@ -67,7 +75,7 @@ export default function SellerProfilePage() {
           <p className="text-sm font-medium text-gray-400">Home {'>'} User Profile</p>
         </div>
         <ProfileHeader 
-          name={userData.fullname}
+          name={userData.fullname || "Loading..."}
           role="Seller"
           avatarUrl={avatar}
           bannerUrl="/banner.jpg"
@@ -82,7 +90,7 @@ export default function SellerProfilePage() {
               <div key={idx} className="grid grid-cols-1 md:grid-cols-4 items-start gap-2 md:gap-8 text-[15px]">
                 <span className="font-black text-[#0f172a] whitespace-nowrap">{row.label}</span>
                 <span className={`font-medium md:col-span-3 ${row.isLink ? "text-blue-600 underline cursor-pointer" : "text-gray-700"} leading-relaxed`}>
-                  {row.value}
+                  {row.value || <span className="text-gray-300">...</span>}
                 </span>
               </div>
             ))}
@@ -124,12 +132,12 @@ export default function SellerProfilePage() {
             const profileRes = await userService.getMe();
             if (profileRes?.data) {
               setUserData({
-                fullname: profileRes.data.fullName,
-                email: profileRes.data.email,
-                phone: profileRes.data.phone,
-                street: profileRes.data.street,
-                province: profileRes.data.province,
-                ward: profileRes.data.ward,
+                fullname: profileRes.data.fullName || "",
+                email: profileRes.data.email || "",
+                phone: profileRes.data.phone || "",
+                street: profileRes.data.street || "",
+                province: profileRes.data.province || "",
+                ward: profileRes.data.ward || "",
               });
             }
 

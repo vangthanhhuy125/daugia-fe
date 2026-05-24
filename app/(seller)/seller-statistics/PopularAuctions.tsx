@@ -14,14 +14,12 @@ export const PopularAuctions = () => {
       .then(async (res) => {
         const auctionList = res.data?.content || [];
 
-        // Chạy vòng lặp qua từng bài đấu giá của Seller để lấy số lượng lượt đặt giá thực tế từ API /bids (hoặc /history)
         const detailPromises = auctionList.map(async (item: any) => {
           try {
-            // Sử dụng API lấy lịch sử đặt giá công khai của bài đấu giá đó
             const bidRes = await biddingService.getBidHistory(item.id, 0, 1);
             return {
               ...item,
-              calculatedBids: bidRes.data?.totalElements || 0 // Tổng số lượt bid thực tế của bài này ở BE
+              calculatedBids: bidRes.data?.totalElements || 0 
             };
           } catch (err) {
             return { ...item, calculatedBids: 0 };
@@ -30,14 +28,16 @@ export const PopularAuctions = () => {
 
         const enrichedAuctions = await Promise.all(detailPromises);
 
-        // 1. Sắp xếp Top 3 dựa trên tổng số lượt đặt giá thực tế thu thập được
         const sortedByBids = [...enrichedAuctions]
           .sort((a, b) => b.calculatedBids - a.calculatedBids)
           .slice(0, 3);
 
-        // 2. Sắp xếp Top 3 dựa trên giá trị (Mua ngay hoặc Giá khởi điểm tốt nhất)
         const sortedByPrice = [...auctionList]
-          .sort((a, b) => (b.buyNowPrice || b.startingPrice || 0) - (a.buyNowPrice || a.startingPrice || 0))
+          .sort((a, b) => {
+            const priceA = a.currentPrice || a.startingPrice || 0;
+            const priceB = b.currentPrice || b.startingPrice || 0;
+            return priceB - priceA;
+          })
           .slice(0, 3);
 
         setTopBids(sortedByBids);
@@ -92,15 +92,18 @@ export const PopularAuctions = () => {
       <div className="space-y-3">
         <h3 className="text-gray-900 font-[900] text-[15px]">Top 3 Highest Bids</h3>
         <div className="flex flex-col md:flex-row gap-5">
-          {highestBids.map((item, idx) => (
-            <TopItem 
-              key={item.id || idx}
-              rank={idx + 1} 
-              title={item.productName || "No Name"} 
-              sub={`${(item.buyNowPrice || item.startingPrice || 0).toLocaleString()} VND`} 
-              isGold={idx === 0} 
-            />
-          ))}
+          {highestBids.map((item, idx) => {
+            const displayPrice = item.currentPrice || item.startingPrice || 0;
+            return (
+              <TopItem 
+                key={item.id || idx}
+                rank={idx + 1} 
+                title={item.productName || "No Name"} 
+                sub={`${displayPrice.toLocaleString()} VND`} 
+                isGold={idx === 0} 
+              />
+            );
+          })}
         </div>
       </div>
     </div>

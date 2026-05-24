@@ -227,52 +227,70 @@ const Header = () => {
       </div>
 
       {open && role !== 'admin' && (
-        <div className="md:hidden border-t border-gray-100 bg-white px-6 py-6 space-y-4 shadow-xl">
+        <div className="md:hidden border-t border-gray-100 bg-white px-6 py-6 space-y-5 shadow-xl transition-all duration-300">
+          
           {isLoggedIn && (
-             <div className="flex items-center gap-3 pb-4 border-b border-gray-50">
-                <UserCircle size={32} className="text-gray-900" />
-                <span className="font-black text-gray-900">Hi, {userName}</span>
-             </div>
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+              <UserCircle size={28} className="text-gray-700" />
+              <span className="font-bold text-gray-900 text-lg">Hi, {userName}</span>
+            </div>
           )}
           
           {(!isLoggedIn || role === 'bidder') ? (
             <>
-              <button onClick={() => setAuctionOpen(!auctionOpen)} className="flex items-center justify-between w-full text-gray-800 font-bold tracking-wider">
-                Auction <ChevronDown size={16} className={`transition-transform ${auctionOpen ? "rotate-180" : ""}`} />
-              </button>
-              {auctionOpen && (
-                <div className="pl-4 flex flex-col gap-3 border-l-2 border-gray-50 text-sm font-medium text-gray-500">
-                  <Link href="/list-auction?status=Upcoming">Upcoming Auctions</Link>
-                  <Link href="/list-auction?status=Live" className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-[#d32f2f] transition">Live Auctions</Link>
-                  <Link href="/list-auction?status=Ended">Auction Results</Link>
-                </div>
-              )}
+              <div className="space-y-2">
+                <button 
+                  onClick={() => setAuctionOpen(!auctionOpen)} 
+                  className="flex items-center justify-between w-full text-gray-700 font-bold tracking-wider hover:text-[#d32f2f] transition-colors"
+                >
+                  <span>Auction</span>
+                  <ChevronDown size={18} className={`transition-transform duration-200 ${auctionOpen ? "rotate-180 text-[#d32f2f]" : ""}`} />
+                </button>
+                
+                {auctionOpen && (
+                  <div className="pl-4 flex flex-col gap-3 border-l-2 border-gray-100 text-sm font-medium text-gray-500 mt-2">
+                    <Link href="/list-auction?status=Upcoming" className="hover:text-[#d32f2f] transition-colors">Upcoming Auctions</Link>
+                    <Link href="/list-auction?status=Live" className="hover:text-[#d32f2f] transition-colors">Live Auctions</Link>
+                    <Link href="/list-auction?status=Ended" className="hover:text-[#d32f2f] transition-colors">Auction Results</Link>
+                  </div>
+                )}
+              </div>
               
-              <Link href="/about" className="block text-gray-700 font-bold tracking-wider">About Us</Link>
-              <Link href="/contact" className="block text-gray-700 font-bold tracking-wider">Contact</Link>
+              <Link href="/about" className="block text-gray-700 font-bold tracking-wider hover:text-[#d32f2f] transition-colors">About Us</Link>
+              <Link href="/contact" className="block text-gray-700 font-bold tracking-wider hover:text-[#d32f2f] transition-colors">Contact</Link>
             </>
           ) : role === 'seller' ? (
             <>
-              <Link href="/seller-home" className="block text-gray-700 font-bold tracking-wider hover:text-[#d32f2f]">Dashboard</Link>
-              <Link href="/seller-auctions" className="block text-[#d32f2f] font-black tracking-wider">Create New Auction</Link>
+              <Link href="/seller-auctions" className="block text-gray-700 font-bold tracking-wider hover:text-[#d32f2f] transition-colors">Auctions</Link>
+              <Link href="/seller-auctions/create" className="block text-gray-700 font-bold tracking-wider hover:text-[#d32f2f] transition-colors">Create New Auction</Link>
             </>
           ) : null}
           
-          <div className="pt-4 flex flex-col gap-3 border-t border-gray-50">
+          <div className="pt-5 flex flex-col gap-4 border-t border-gray-100">
             {isLoggedIn ? (
               <>
-                <Link href={role === 'seller' ? "/seller-profile" : "/bidder-profile"} className="text-gray-700 font-bold tracking-wider">Personal Profile</Link>
-                <button onClick={() => setShowLogoutModal(true)} className="flex items-center gap-2 text-[#d32f2f] font-bold tracking-wider">
-                  <LogOut size={18} /> Log Out
+                <Link href={role === 'seller' ? "/seller-profile" : "/bidder-profile"} className="text-gray-700 font-bold tracking-wider hover:text-[#d32f2f] transition-colors">
+                  Personal Profile
+                </Link>
+                <button 
+                  onClick={() => setShowLogoutModal(true)} 
+                  className="flex items-center gap-2 text-[#d32f2f] font-bold tracking-wider hover:opacity-80 transition-opacity w-fit"
+                >
+                  <LogOut size={18} /> <span>Log Out</span>
                 </button>
               </>
             ) : (
               <>
-                <Link href="/login" className="text-gray-700 font-bold tracking-wider">Log In</Link>
-                <Link href="/register" className="px-5 py-3 bg-[#d32f2f] text-white text-center font-[900] rounded-md tracking-widest shadow-md">Sign Up</Link>
+                <Link href="/login" className="text-center text-gray-700 font-bold tracking-wider hover:text-[#d32f2f] transition-colors py-2">
+                  Log In
+                </Link>
+                <Link href="/register" className="px-5 py-3 bg-[#d32f2f] text-white text-center font-bold rounded-md tracking-widest shadow-md hover:bg-[#b71c1c] transition-colors dynamic-shadow">
+                  Sign Up
+                </Link>
               </>
             )}
           </div>
+
         </div>
       )}
 

@@ -9,10 +9,12 @@ import { Sidebar } from "@/components/Sidebar";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { userService } from "@/services/userService";
+import { useAuth } from "@/app/context/AuthContext";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
 export default function UserProfilePage() {
+  const { isLoggedIn } = useAuth();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -30,11 +32,14 @@ export default function UserProfilePage() {
   const [avatar, setAvatar] = useState("/avatar.jfif");
 
   useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    if (!token && !isLoggedIn) return;
+
     userService.getMe()
       .then(res => {
         if (res.data) {
           setUserData({
-            fullname: res.data.fullName || "",
+            fullname: res.data.fullName || "", 
             email: res.data.email || "",
             phone: res.data.phone || "",
             street: res.data.street || "",
@@ -57,7 +62,7 @@ export default function UserProfilePage() {
         }
       })
       .catch(console.error);
-  }, []);
+  }, [isLoggedIn]); 
 
   const profileData = [
     { label: "Fullname:", value: userData.fullname },
@@ -112,16 +117,49 @@ export default function UserProfilePage() {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         initialData={userData}
-        onConfirm={(newData) => {
-          setUserData({
-            fullname: newData.fullname,
-            email: newData.email,
-            phone: newData.phone,
-            street: newData.street,
-            province: newData.province,
-            ward: newData.ward,
-          });
-          setIsEditModalOpen(false);
+        onConfirm={async (newData) => {
+          try {
+            const translateAddress = (text: string) => {
+              if (!text) return "";
+              return text
+                .replace(/Thành phố/g, "City")
+                .replace(/Tỉnh/g, "Province")
+                .replace(/Quận|Huyện/g, "District")
+                .replace(/Phường|Xã/g, "Ward")
+                .replace(/Đường/g, "Street");
+            };
+
+            const translatedStreet = translateAddress(newData.street);
+            const translatedProvince = translateAddress(newData.province);
+            const translatedWard = translateAddress(newData.ward);
+
+            const service = userService as any;
+            if (typeof service.updateProfile === "function") {
+              await service.updateProfile({
+                fullName: typeof newData.fullname === 'object' ? newData.fullname.value : newData.fullname,
+                phone: newData.phone,
+                street: translatedStreet,
+                province: translatedProvince,
+                ward: translatedWard,
+              });
+            }
+
+            const profileRes = await userService.getMe();
+            if (profileRes?.data) {
+              setUserData({
+                fullname: profileRes.data.fullName || "",
+                email: profileRes.data.email || "",
+                phone: profileRes.data.phone || "",
+                street: profileRes.data.street || "",
+                province: profileRes.data.province || "",
+                ward: profileRes.data.ward || "",
+              });
+            }
+
+          } catch (error) {
+            console.error("Failed to update profile data", error);
+            alert("An error occurred while saving your profile.");
+          }
         }}
       />
 

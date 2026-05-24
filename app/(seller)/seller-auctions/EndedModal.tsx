@@ -34,12 +34,11 @@ export const EndedModal = ({ isOpen, onClose, auctionId }: EndedModalProps) => {
         .then(res => setAuctionDetail(res.data))
         .catch(err => console.error(err));
 
-      // Gọi API lấy lịch sử đấu giá thực tế từ biddingService
       biddingService.getImmutableHistory(auctionId)
         .then(res => {
           const mapped = res.data.content.map((item: any, index: number) => ({
             no: index + 1,
-            name: item.bidderEmailMasked, // Map email ẩn vào cột Bidder Name
+            name: item.bidderEmailMasked, 
             amount: item.amount,
             time: new Date(item.bidTime).toLocaleString('en-GB'),
             isLeading: index === 0
@@ -72,7 +71,6 @@ export const EndedModal = ({ isOpen, onClose, auctionId }: EndedModalProps) => {
   const mainImage = imagesList[0]?.imageUrl || "/banner.jpg";
   const subImages = imagesList.slice(1);
 
-  // Lấy email ẩn của người thắng cuộc từ vị trí đầu tiên trong lịch sử đấu giá
   const winnerEmail = bidHistory.find(b => b.isLeading)?.name || auctionDetail?.bidderEmailMasked || "N/A";
 
   return (

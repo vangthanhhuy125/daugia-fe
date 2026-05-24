@@ -29,7 +29,6 @@ const SellerAuctionCard = ({
   const isLive = status === 'live';
   const isRejected = status === 'rejected';
 
-  // Xác định màu sắc viền/nền nổi bật dựa trên trạng thái
   const getStatusStyles = () => {
     switch (status) {
       case "pending":
@@ -67,7 +66,7 @@ const SellerAuctionCard = ({
         <>
           <div className="text-center mb-3">
             <p className="text-[10px] font-[900] text-gray-400 tracking-widest uppercase">
-              {status === 'ended' ? 'End Time' : 'Auction Time'}
+              {status === 'ended' || status === 'live' ? 'Auction End Time' : 'Auction Time'}
             </p>
             <p className="text-sm font-[900] text-gray-800">{time}</p>
           </div>
