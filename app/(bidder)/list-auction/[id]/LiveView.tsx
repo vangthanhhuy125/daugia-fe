@@ -25,7 +25,7 @@ export const LiveView = ({ infoRows, auctionDetail, reservationStatus }: LiveVie
   const hasActiveAutoBid = 
     Boolean(auctionDetail?.active) === true && 
     (auctionDetail?.maxAmount !== undefined && auctionDetail?.maxAmount !== null) &&
-    Number(currentHighest) <= Number(auctionDetail?.maxAmount);
+    Number(currentHighest) < Number(auctionDetail?.maxAmount);
 
   useEffect(() => {
     if (!auctionDetail?.biddingEndTime) return;

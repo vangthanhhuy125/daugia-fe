@@ -67,8 +67,9 @@ export default function BidderAuctionsPage() {
             time: dateStr,
             price: `${Number(priceVal).toLocaleString()} VND`,
             priceLabel: "Starting Bid",
-            image: item.thumbnailUrl || "/laptop-image.png",
+            image: item.thumbnailUrl,
             status: "Watching",
+            backendStatus: item.status,
             isLeading: false,
             result: undefined,
             rawDate: rawDate
@@ -125,6 +126,12 @@ export default function BidderAuctionsPage() {
   const sourceAuctions = activeTab === "Watching" ? watchingAuctions : myBidAuctions;
   const filteredAuctions = sourceAuctions.filter(item => {
     const matchesTab = item.status === activeTab;
+
+    if (activeTab === "Watching") {
+      const isUpcomingOrApproved = item.backendStatus === "UPCOMING" || item.backendStatus === "APPROVED";
+      if (!isUpcomingOrApproved) return false;
+    }
+    
     const matchesSearch = searchTerm.length >= 2 
       ? item.title?.toLowerCase().includes(searchTerm.toLowerCase()) 
       : true;
@@ -301,7 +308,7 @@ export default function BidderAuctionsPage() {
               ) : (
                 <div className="col-span-full py-20 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
                   <Search size={48} className="mb-4 opacity-10" />
-                  <p className="font-[900] tracking-widest text-lg uppercase">No results found</p>
+                  <p className="font-[900] tracking-widest text-lg">No results found</p>
                 </div>
               )}
             </div>

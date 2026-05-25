@@ -68,10 +68,6 @@ export const UpcomingView = ({ infoRows, auctionDetail }: UpcomingViewProps) => 
           </div>
         ))}
       </div>
-
-      <button className="w-full py-3 bg-[#CE2029] text-white font-bold text-xl rounded-xl shadow-lg hover:bg-red-700 transition-all active:scale-[0.98]">
-        Follow This Auction
-      </button>
     </div>
   );
 };

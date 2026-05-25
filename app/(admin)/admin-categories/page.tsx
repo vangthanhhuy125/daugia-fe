@@ -35,19 +35,16 @@ export default function AdminCategoriesPage() {
     try {
       const [categoryRes, auctionsRes] = await Promise.all([
         categoryService.getAll(0, 100),
-        auctionService.searchAdmin({ size: 1000 })
+        auctionService.searchPublic({ size: 999 })
       ]);
 
       const categoriesList = categoryRes.data?.content || [];
       const auctionItems = auctionsRes.data?.content || [];
 
       const mapped = categoriesList.map((cat: any) => {
-        // KIỂM TRA BÊN TRONG AUCTION CỦA BẠN DÙNG TRƯỜNG NÀO:
-        // Tình huống 1: So sánh bằng ID (Khuyên dùng)
-        const count = auctionItems.filter((auction: any) => auction.categoryId === cat.id).length;
-        
-        // Tình huống 2: Nếu Backend trong auction chỉ trả về tên categoryName, hãy bỏ comment dòng dưới:
-        // const count = auctionItems.filter((auction: any) => auction.categoryName === cat.name).length;
+        const count = auctionItems.filter((auction: any) => 
+          auction.categoryId === cat.id || auction.categoryName === cat.name
+        ).length;
 
         return {
           id: cat.id,
