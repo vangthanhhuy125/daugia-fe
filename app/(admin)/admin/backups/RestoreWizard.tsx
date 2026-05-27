@@ -8,7 +8,7 @@ interface RestoreWizardProps {
   isOpen: boolean;
   backup: BackupResponse | null;
   onClose: () => void;
-  onRestore: (mode: "backup" | "pitr", targetDateTime?: string) => Promise<void>;
+  onRestore: () => Promise<void>;
   restoreStatus?: RestoreResponse | null;
 }
 
@@ -31,22 +31,18 @@ const resolveStepIndex = (message?: string, status?: string) => {
 
 export const RestoreWizard = ({ isOpen, backup, onClose, onRestore, restoreStatus }: RestoreWizardProps) => {
   const [step, setStep] = useState(1);
-  const [mode, setMode] = useState<"backup" | "pitr">("backup");
-  const [targetDateTime, setTargetDateTime] = useState("");
   const [confirmText, setConfirmText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
       setStep(1);
-      setMode("backup");
-      setTargetDateTime("");
       setConfirmText("");
       setIsSubmitting(false);
     }
   }, [isOpen]);
 
-  const canProceed = mode === "backup" || Boolean(targetDateTime);
+  const canProceed = true;
   const isConfirmed = confirmText === "CONFIRM";
 
   const activeStep = useMemo(() => resolveStepIndex(restoreStatus?.message, restoreStatus?.status), [restoreStatus]);
@@ -67,58 +63,7 @@ export const RestoreWizard = ({ isOpen, backup, onClose, onRestore, restoreStatu
         <div className="mt-6 space-y-6">
           {step === 1 && (
             <div className="space-y-4">
-              <h4 className="text-lg font-bold text-slate-900">Step 1 — Choose restore type</h4>
-              <div className="grid gap-4">
-                <label className={`border rounded-2xl p-4 flex items-start gap-3 cursor-pointer ${mode === "backup" ? "border-[#CE2029] bg-[#fff5f5]" : "border-slate-200"}`}>
-                  <input
-                    type="radio"
-                    checked={mode === "backup"}
-                    onChange={() => setMode("backup")}
-                    className="mt-1"
-                  />
-                  <div>
-                    <div className="font-bold text-slate-900">Restore from this backup</div>
-                    <div className="text-sm text-slate-500">Full restore using the selected backup file.</div>
-                  </div>
-                </label>
-
-                <label className={`border rounded-2xl p-4 flex items-start gap-3 cursor-pointer ${mode === "pitr" ? "border-[#0f172a] bg-[#f1f5f9]" : "border-slate-200"}`}>
-                  <input
-                    type="radio"
-                    checked={mode === "pitr"}
-                    onChange={() => setMode("pitr")}
-                    className="mt-1"
-                  />
-                  <div className="space-y-2">
-                    <div className="font-bold text-slate-900">Point-in-time restore</div>
-                    <div className="text-sm text-slate-500">Replay WAL files to a specific point in time.</div>
-                    {mode === "pitr" && (
-                      <input
-                        type="datetime-local"
-                        value={targetDateTime}
-                        onChange={(event) => setTargetDateTime(event.target.value)}
-                        className="mt-2 h-10 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700"
-                      />
-                    )}
-                  </div>
-                </label>
-              </div>
-              <div className="flex justify-end gap-3">
-                <button onClick={onClose} className="rounded-full border border-slate-200 px-5 py-2 text-sm font-bold text-slate-600">Cancel</button>
-                <button
-                  onClick={() => setStep(2)}
-                  disabled={!canProceed}
-                  className="rounded-full bg-[#0f172a] px-6 py-2 text-sm font-bold text-white disabled:opacity-50"
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-bold text-slate-900">Step 2 — Confirmation</h4>
+              <h4 className="text-lg font-bold text-slate-900">Step 1 — Confirmation</h4>
               <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 font-semibold">
                 WARNING: This will OVERWRITE the current database. All data after the backup point will be lost. This action cannot be undone.
               </div>
@@ -142,13 +87,13 @@ export const RestoreWizard = ({ isOpen, backup, onClose, onRestore, restoreStatu
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <button onClick={() => setStep(1)} className="rounded-full border border-slate-200 px-5 py-2 text-sm font-bold text-slate-600">Back</button>
+                <button onClick={onClose} className="rounded-full border border-slate-200 px-5 py-2 text-sm font-bold text-slate-600">Cancel</button>
                 <button
                   onClick={async () => {
                     setIsSubmitting(true);
-                    await onRestore(mode, targetDateTime);
+                    await onRestore();
                     setIsSubmitting(false);
-                    setStep(3);
+                    setStep(2);
                   }}
                   disabled={!isConfirmed || isSubmitting}
                   className="rounded-full bg-[#CE2029] px-6 py-2 text-sm font-bold text-white disabled:opacity-50"
@@ -159,9 +104,9 @@ export const RestoreWizard = ({ isOpen, backup, onClose, onRestore, restoreStatu
             </div>
           )}
 
-          {step === 3 && (
+          {step === 2 && (
             <div className="space-y-4">
-              <h4 className="text-lg font-bold text-slate-900">Step 3 — Progress</h4>
+              <h4 className="text-lg font-bold text-slate-900">Step 2 — Progress</h4>
               <div className="space-y-3">
                 {steps.map((label, index) => (
                   <div key={label} className="flex items-center gap-3">

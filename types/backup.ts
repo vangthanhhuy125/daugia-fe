@@ -1,4 +1,4 @@
-export type BackupType = "FULL" | "WAL";
+export type BackupType = "FULL";
 export type BackupStatus = "PENDING" | "RUNNING" | "SUCCESS" | "FAILED" | "DELETED";
 export type RestoreStatus = "PENDING" | "RUNNING" | "SUCCESS" | "FAILED";
 

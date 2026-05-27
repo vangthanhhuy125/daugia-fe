@@ -115,7 +115,6 @@ export const BackupHistoryTable = ({
           >
             <option value="">All</option>
             <option value="FULL">FULL</option>
-            <option value="WAL">WAL</option>
           </select>
         </div>
 

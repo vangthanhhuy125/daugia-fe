@@ -81,16 +81,9 @@ export default function AdminBackupsPage() {
     }
   };
 
-  const handleRestore = async (mode: "backup" | "pitr", targetDateTime?: string) => {
+  const handleRestore = async () => {
     if (!selectedBackup) return;
-    if (mode === "backup") {
-      await backupApi.restoreBackup(selectedBackup.id);
-    } else {
-      const normalized = targetDateTime && targetDateTime.length === 16
-        ? `${targetDateTime}:00`
-        : targetDateTime;
-      await backupApi.pointInTimeRestore({ targetDateTime: normalized });
-    }
+    await backupApi.restoreBackup(selectedBackup.id);
     refreshStatus();
   };
 

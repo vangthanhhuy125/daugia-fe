@@ -7,12 +7,10 @@ interface RetentionSettingsProps {
 }
 
 const parseRetention = (policy?: string) => {
-  if (!policy) return { fullWeeks: 4, walDays: 14 };
+  if (!policy) return { fullWeeks: 4 };
   const fullMatch = policy.match(/Full:\s*(\d+)/i);
-  const walMatch = policy.match(/WAL:\s*(\d+)/i);
   return {
     fullWeeks: fullMatch ? Number(fullMatch[1]) : 4,
-    walDays: walMatch ? Number(walMatch[1]) : 14,
   };
 };
 
@@ -20,13 +18,11 @@ export const RetentionSettings = ({ retentionPolicy }: RetentionSettingsProps) =
   const defaults = useMemo(() => parseRetention(retentionPolicy), [retentionPolicy]);
   const [open, setOpen] = useState(false);
   const [fullWeeks, setFullWeeks] = useState(defaults.fullWeeks);
-  const [walDays, setWalDays] = useState(defaults.walDays);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   React.useEffect(() => {
     setFullWeeks(defaults.fullWeeks);
-    setWalDays(defaults.walDays);
-  }, [defaults.fullWeeks, defaults.walDays]);
+  }, [defaults.fullWeeks]);
 
   const handleSave = () => {
     setSavedMessage("Saved locally. Apply changes via server configuration.");
@@ -41,7 +37,7 @@ export const RetentionSettings = ({ retentionPolicy }: RetentionSettingsProps) =
       >
         <div>
           <div className="text-lg font-black text-slate-900">Retention settings</div>
-          <div className="text-xs text-slate-500 font-semibold">{retentionPolicy || "Full: 4 weeks, WAL: 14 days"}</div>
+          <div className="text-xs text-slate-500 font-semibold">{retentionPolicy || "Full: 4 weeks"}</div>
         </div>
         <span className="text-slate-500 text-sm font-bold">{open ? "Hide" : "Edit"}</span>
       </button>
@@ -57,15 +53,7 @@ export const RetentionSettings = ({ retentionPolicy }: RetentionSettingsProps) =
               className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700"
             />
           </label>
-          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-600">
-            WAL archives (days)
-            <input
-              type="number"
-              value={walDays}
-              onChange={(event) => setWalDays(Number(event.target.value))}
-              className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700"
-            />
-          </label>
+
           <div className="flex flex-col justify-end">
             <button
               onClick={handleSave}

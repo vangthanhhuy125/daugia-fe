@@ -26,9 +26,7 @@ export const backupApi = {
     return apiClient.post(`/admin/backups/${id}/restore`);
   },
 
-  pointInTimeRestore: (request: RestoreRequest): Promise<ApiResponse<RestoreResponse>> => {
-    return apiClient.post("/admin/backups/pitr", request);
-  },
+
 
   getStatus: (): Promise<ApiResponse<BackupStatusResponse>> => {
     return apiClient.get("/admin/backups/status");
