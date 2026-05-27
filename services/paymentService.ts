@@ -1,6 +1,6 @@
 import apiClient from "../api/apiClient";
 import { ApiResponse } from "../types/auth"; 
-import { PaymentResponse } from "../types/payment";
+import { PaymentResponse, BuyNowReservationStatus } from "../types/payment";
 
 export const paymentService = {
   createPayment: (auctionId: string): Promise<ApiResponse<PaymentResponse>> => {
@@ -13,6 +13,10 @@ export const paymentService = {
 
   getMyPayments: (): Promise<ApiResponse<PaymentResponse[]>> => {
     return apiClient.get("/payments/my");
+  },
+
+  getReservationStatus: (auctionId: string): Promise<ApiResponse<BuyNowReservationStatus>> => {
+    return apiClient.get(`/payments/auction/${auctionId}/reservation`);
   },
 
   /**

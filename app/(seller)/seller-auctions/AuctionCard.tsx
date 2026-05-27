@@ -11,6 +11,7 @@ interface SellerAuctionCardProps {
   price: string;
   priceLabel: string;
   status: "pending" | "upcoming" | "live" | "ended" | "rejected";
+  rawStatus?: string;
   result?: "sold" | "unsold";
   onDetailsClick: (id: string, status: any) => void;
 }
@@ -22,14 +23,17 @@ const SellerAuctionCard = ({
   time, 
   price, 
   priceLabel, 
-  status, 
+  status,
+  rawStatus,
   result,
   onDetailsClick
 }: SellerAuctionCardProps) => {
   const isLive = status === 'live';
-  const isRejected = status === 'rejected';
+  const isRejected = status === 'rejected' || rawStatus === 'REJECTED';
 
   const getStatusStyles = () => {
+    if (isRejected) return "border-red-200 bg-red-50/10";
+    
     switch (status) {
       case "pending":
         return "border-amber-400 bg-amber-50/30";
@@ -37,8 +41,6 @@ const SellerAuctionCard = ({
         return "border-green-500 bg-green-50/30";
       case "ended":
         return "border-orange-500 bg-orange-50/30";
-      case "rejected":
-        return "border-gray-300 bg-gray-50/50 opacity-75";
       case "live":
         return "border-red-500 shadow-[0_0_15px_rgba(211,47,47,0.2)]";
       default:
@@ -50,18 +52,25 @@ const SellerAuctionCard = ({
     <div className={`relative group border rounded-2xl p-4 transition-all hover:shadow-md bg-white ${getStatusStyles()}`}>
 
       {isRejected ? (
-        <div className="flex flex-col h-full justify-between min-h-[180px] py-4">
-          <div className="text-center my-auto">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Status: Rejected</span>
-            <h4 className="font-bold text-gray-400 text-base line-clamp-3 px-2">{title}</h4>
+        <>
+          <div className="relative aspect-video w-full mb-4 rounded-xl overflow-hidden bg-gray-50">
+            <Image src={image} alt={title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
           </div>
+
+          <div className="text-center space-y-2 mb-4">
+            <h4 className="font-bold text-gray-900 text-base truncate">{title}</h4>
+            <div className="text-center py-1.5 text-red-600 font-[900] rounded-xl text-xs uppercase tracking-wider">
+              Rejected
+            </div>
+          </div>
+
           <button 
-            onClick={() => onDetailsClick(id, status)}
-            className="w-full py-2.5 bg-gray-400 text-white text-xs font-[900] rounded-lg hover:bg-gray-500 transition active:scale-95 tracking-wider mt-4"
+            onClick={() => onDetailsClick(id, "ended")}
+            className="w-full py-2.5 bg-[#d32f2f] text-white text-xs font-[900] rounded-lg hover:bg-red-700 transition active:scale-95 tracking-wider"
           >
             Details
           </button>
-        </div>
+        </>
       ) : (
         <>
           <div className="text-center mb-3">

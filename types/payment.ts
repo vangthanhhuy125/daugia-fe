@@ -16,3 +16,10 @@ export interface PaymentResponse {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface BuyNowReservationStatus {
+  hasReservation: boolean;
+  isOwner: boolean;
+  remainingSeconds: number | null;
+  paymentUrl: string | null;
+}

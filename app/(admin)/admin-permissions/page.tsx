@@ -42,8 +42,8 @@ export default function AdminPermissionsPage() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [roleFilters, setRoleFilters] = useState<string[]>([]);
-  const [sortDesc, setSortDesc] = useState(true);
   const [isUnlockSorted, setIsUnlockSorted] = useState(false);
+  const [isDateSorted, setIsDateSorted] = useState(false);
 
   const [users, setUsers] = useState<UserData[]>([]);
   const [admins, setAdmins] = useState<AdminData[]>([]);
@@ -155,6 +155,7 @@ export default function AdminPermissionsPage() {
     setStatusFilters([]);
     setRoleFilters([]);
     setIsUnlockSorted(false);
+    setIsDateSorted(false);
   };
 
   const parseDate = (dStr: string) => {
@@ -212,8 +213,12 @@ export default function AdminPermissionsPage() {
       return [...filtered].sort((a, b) => Number(b.hasUnlockRequest) - Number(a.hasUnlockRequest));
     }
 
-    return filtered.sort((a, b) => sortDesc ? parseDate(b.joinDate).getTime() - parseDate(a.joinDate).getTime() : parseDate(a.joinDate).getTime() - parseDate(b.joinDate).getTime());
-  }, [users, search, startDate, endDate, statusFilters, roleFilters, sortDesc, isUnlockSorted]);
+    if (isDateSorted) {
+      return [...filtered].sort((a, b) => parseDate(a.joinDate).getTime() - parseDate(b.joinDate).getTime());
+    }
+
+    return filtered.sort((a, b) => parseDate(b.joinDate).getTime() - parseDate(a.joinDate).getTime());
+  }, [users, search, startDate, endDate, statusFilters, roleFilters, isUnlockSorted, isDateSorted]);
 
   const filteredAdmins = useMemo(() => {
     let filtered = admins.filter(a => {
@@ -228,8 +233,13 @@ export default function AdminPermissionsPage() {
 
       return matchSearch && matchStatus && matchDate;
     });
-    return filtered.sort((a, b) => sortDesc ? parseDate(b.creationDate).getTime() - parseDate(a.creationDate).getTime() : parseDate(a.creationDate).getTime() - parseDate(b.creationDate).getTime());
-  }, [admins, search, startDate, endDate, statusFilters, sortDesc]);
+    
+    if (isDateSorted) {
+      return [...filtered].sort((a, b) => parseDate(a.creationDate).getTime() - parseDate(b.creationDate).getTime());
+    }
+
+    return filtered.sort((a, b) => parseDate(b.creationDate).getTime() - parseDate(a.creationDate).getTime());
+  }, [admins, search, startDate, endDate, statusFilters, isDateSorted]);
 
   const currentData = activeTab === "users" ? filteredUsers : filteredAdmins;
 
@@ -324,19 +334,19 @@ export default function AdminPermissionsPage() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-gray-100">
-              <table className="w-full text-center border-collapse table-fixed">
+            <div className="overflow-x-auto w-full rounded-xl border border-gray-100">
+              <table className="w-full text-center border-collapse table-fixed min-w-[768px]">
                 <thead>
                   <tr className="border-b-2 border-black bg-white">
                     <th className="py-4 font-bold w-16">No</th>
                     <th className="py-4 font-bold pl-8 w-48">{activeTab === "users" ? "Sender" : "Display name"}</th>
-                    <th className="py-4 font-bold cursor-pointer hover:text-[#CE2029] w-36" onClick={() => { setIsUnlockSorted(false); setSortDesc(!sortDesc); }}>
+                    <th className="py-4 font-bold cursor-pointer hover:text-[#CE2029] w-36" onClick={() => { setIsUnlockSorted(false); setIsDateSorted(!isDateSorted); }}>
                       <div className="flex items-center justify-center gap-1">{activeTab === "users" ? "Join Date" : "Creation date"} <ArrowUpDown size={14} /></div>
                     </th>
                     {activeTab === "users" && <th className="py-4 font-bold w-24">Role</th>}
                     <th className="py-4 font-bold w-28">Status</th>
                     {activeTab === "users" && (
-                      <th className="py-4 font-bold cursor-pointer hover:text-[#CE2029] w-44" onClick={() => setIsUnlockSorted(!isUnlockSorted)}>
+                      <th className="py-4 font-bold cursor-pointer hover:text-[#CE2029] w-44" onClick={() => { setIsDateSorted(false); setIsUnlockSorted(!isUnlockSorted); }}>
                         <div className="flex items-center justify-center gap-1 whitespace-nowrap">Unlock Request <ArrowUpDown size={14} /></div>
                       </th>
                     )}

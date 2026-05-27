@@ -1,9 +1,55 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Crown } from "lucide-react";
+import { auctionService } from "@/services/auctionService";
+import { biddingService } from "@/services/biddingService";
 
 export const PopularAuctions = () => {
+  const [topBids, setTopBids] = useState<any[]>([]);
+  const [highestBids, setHighestBids] = useState<any[]>([]);
+
+  useEffect(() => {
+    auctionService.searchPublic({ size: 999 })
+      .then(async (res) => {
+        const auctionList = res.data?.content || [];
+
+        const validAuctions = auctionList.filter((item: any) => 
+          item.status === "LIVE" || item.status === "ACTIVE" || item.status === "ENDED"
+        );
+
+        const detailPromises = validAuctions.map(async (item: any) => {
+          try {
+            const bidRes = await biddingService.getBidHistory(item.id, 0, 1);
+            return {
+              ...item,
+              calculatedBids: bidRes.data?.totalElements || 0 
+            };
+          } catch (err) {
+            return { ...item, calculatedBids: 0 };
+          }
+        });
+
+        const enrichedAuctions = await Promise.all(detailPromises);
+
+        const sortedByBids = [...enrichedAuctions]
+          .sort((a, b) => b.calculatedBids - a.calculatedBids)
+          .slice(0, 3);
+
+        const sortedByPrice = [...validAuctions]
+          .sort((a, b) => {
+            const priceA = a.currentPrice || a.startingPrice || 0;
+            const priceB = b.currentPrice || b.startingPrice || 0;
+            return priceB - priceA;
+          })
+          .slice(0, 3);
+
+        setTopBids(sortedByBids);
+        setHighestBids(sortedByPrice);
+      })
+      .catch(console.error);
+  }, []);
+
   const TopItem = ({ rank, title, sub, isGold }: any) => (
     <div className={`
       flex items-center gap-5 px-6 py-4 border-2 rounded-2xl bg-white flex-1 
@@ -25,7 +71,7 @@ export const PopularAuctions = () => {
         <p className={`text-lg font-[900] leading-tight ${isGold ? 'text-yellow-400' : 'text-gray-900'}`}>
           {title}
         </p>
-        <p className={`text-[13px] font-bold mt-1 ${isGold ? 'text-yellow-400' : 'text-gray-700'}`}>
+        <p className={`text-[13px] font-bold mt-1 ${isGold ? 'text-yellow-400' : 'text-gray-707'}`}>
           {sub}
         </p>
       </div>
@@ -41,18 +87,33 @@ export const PopularAuctions = () => {
       <div className="space-y-3">
         <h3 className="text-gray-900 font-[900] text-[15px]">Top 3 Most Bids</h3>
         <div className="flex flex-col md:flex-row gap-5">
-          <TopItem rank={1} title="Laptop Dell" sub="24 Total Bids" isGold />
-          <TopItem rank={2} title="Laptop Dell" sub="24 Total Bids" />
-          <TopItem rank={3} title="Laptop Dell" sub="24 Total Bids" />
+          {topBids.map((item, idx) => (
+            <TopItem 
+              key={item.id || idx} 
+              rank={idx + 1} 
+              title={item.productName || "No Name"} 
+              sub={`${item.calculatedBids || 0} Total Bids`} 
+              isGold={idx === 0} 
+            />
+          ))}
         </div>
       </div>
 
       <div className="space-y-3">
         <h3 className="text-gray-900 font-[900] text-[15px]">Top 3 Highest Bids</h3>
         <div className="flex flex-col md:flex-row gap-5">
-          <TopItem rank={1} title="Rolex Watch" sub="30,000,000 VND" isGold />
-          <TopItem rank={2} title="Rolex Watch" sub="24,000,000 VND" />
-          <TopItem rank={3} title="Rolex Watch" sub="22,000,000 VND" />
+          {highestBids.map((item, idx) => {
+            const displayPrice = item.currentPrice || item.startingPrice || 0;
+            return (
+              <TopItem 
+                key={item.id || idx} 
+                rank={idx + 1} 
+                title={item.productName || "No Name"} 
+                sub={`${displayPrice.toLocaleString()} VND`} 
+                isGold={idx === 0} 
+              />
+            );
+          })}
         </div>
       </div>
     </div>

@@ -66,23 +66,17 @@ export const OverviewCards = () => {
   });
 
   useEffect(() => {
-    // Gọi API lấy toàn bộ danh sách đấu giá của tôi (set size lớn để quét hết dữ liệu tự tính toán)
     auctionService.getMyAuctions(0, 999)
       .then(res => {
         const auctionList = res.data?.content || [];
 
-        // 1. Tổng số sản phẩm đã đăng
         const productsListed = auctionList.length;
 
-        // 2. Số cuộc đấu giá đang hoạt động (Dựa theo logic status của bạn, ví dụ là 'ACTIVE' hoặc 'PROGRESS')
         const activeAuctions = auctionList.filter((item: any) => item.status === "ACTIVE").length;
 
-        // 3. Số sản phẩm đã bán thành công (Ví dụ status là 'COMPLETED' hoặc 'SOLD')
         const soldAuctions = auctionList.filter((item: any) => item.status === "ENDED");
         const soldItems = soldAuctions.length;
 
-        // 4. Tính tổng doanh thu bằng cách cộng dồn giá mua ngay hoặc giá cao nhất của các bài đã sold
-        // Thay 'currentPrice' hoặc 'buyNowPrice' tùy thuộc vào cấu trúc của AuctionSummaryResponse bên bạn
         const totalRevenue = soldAuctions.reduce((sum: number, item: any) => {
           return sum + (item.currentPrice || item.startingPrice || 0);
         }, 0);

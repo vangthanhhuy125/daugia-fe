@@ -54,7 +54,7 @@ export default function UserProfilePage() {
           }
 
           if (res.data.createdAt) {
-            setMemberSince(new Date(res.data.createdAt).getFullYear().toString());
+            setMemberSince(new Date(res.data.createdAt).toLocaleDateString("en-GB"));
           }
           if (res.data.avatarUrl) {
             setAvatar(res.data.avatarUrl);

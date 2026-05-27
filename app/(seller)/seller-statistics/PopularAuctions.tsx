@@ -14,7 +14,11 @@ export const PopularAuctions = () => {
       .then(async (res) => {
         const auctionList = res.data?.content || [];
 
-        const detailPromises = auctionList.map(async (item: any) => {
+        const validAuctions = auctionList.filter((item: any) => 
+          item.status === "LIVE" || item.status === "ACTIVE" || item.status === "ENDED"
+        );
+
+        const detailPromises = validAuctions.map(async (item: any) => {
           try {
             const bidRes = await biddingService.getBidHistory(item.id, 0, 1);
             return {
@@ -32,7 +36,7 @@ export const PopularAuctions = () => {
           .sort((a, b) => b.calculatedBids - a.calculatedBids)
           .slice(0, 3);
 
-        const sortedByPrice = [...auctionList]
+        const sortedByPrice = [...validAuctions]
           .sort((a, b) => {
             const priceA = a.currentPrice || a.startingPrice || 0;
             const priceB = b.currentPrice || b.startingPrice || 0;

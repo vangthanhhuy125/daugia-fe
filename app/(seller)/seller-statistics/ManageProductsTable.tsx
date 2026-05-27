@@ -19,11 +19,19 @@ export const ManageProductsTable = () => {
         const mapped = auctionList.map((item: any) => {
           const isEnded = item.status === "ENDED";
           const revenue = isEnded ? (item.buyNowPrice || item.startingPrice || 0) : 0;
+
+          let displayStatus = item.status || "UNKNOWN";
+          if (item.status === "PENDING" || item.status === "APPROVED") {
+            displayStatus = "UPCOMING";
+          } else if (item.status === "ACTIVE" || item.status === "LIVE") {
+            displayStatus = "LIVE"; 
+          }
+
           return {
             id: item.id,
             name: item.productName || "No Name",
             category: item.categoryName || "Uncategorized",
-            status: item.status || "UNKNOWN",
+            status: displayStatus,
             date: item.biddingEndTime ? new Date(item.biddingEndTime).toLocaleDateString("en-GB") : "-",
             bids: 0,
             type: item.buyNowPrice ? "Buy now" : "Auction",
@@ -56,7 +64,7 @@ export const ManageProductsTable = () => {
   const filteredProducts = products.filter((p) => {
     const matchSearch = searchTerm.length >= 2 ? p.name.toLowerCase().includes(searchTerm.toLowerCase()) : true;
     const matchCat = categoryFilter === "All Category" || p.category === categoryFilter;
-    const matchStatus = statusFilter === "All Status" || p.status === statusFilter;
+    const matchStatus = statusFilter === "All Status" || p.status.toLowerCase() === statusFilter.toLowerCase();
     return matchSearch && matchCat && matchStatus;
   });
 
@@ -113,7 +121,6 @@ export const ManageProductsTable = () => {
           <option>Upcoming</option>
           <option>Live</option>
           <option>Ended</option>
-          <option>ENDED</option>
         </select>
 
         <RotateCcw 
@@ -152,7 +159,6 @@ export const ManageProductsTable = () => {
             <tbody>
             {sortedProducts.length > 0 ? (
                 sortedProducts.map((item, idx) => {
-
                 return (
                     <tr 
                     key={item.id || idx} 

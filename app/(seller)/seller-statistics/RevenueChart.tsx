@@ -31,13 +31,34 @@ export const RevenueChart = () => {
     auctionService.getMyAuctions(0, 999)
       .then(res => {
         const auctionList = res.data?.content || [];
-        const completedAuctions = auctionList.filter((item: any) => item.status === "ENDED");
+        
+        let completedAuctions = auctionList.filter((item: any) => item.status === "ENDED");
+
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        const pastLimitDate = new Date(now);
+        
+        if (timeRange === "Last 7 Days") {
+          pastLimitDate.setDate(now.getDate() - 7);
+          completedAuctions = completedAuctions.filter((item: any) => {
+            if (!item.biddingEndTime) return false;
+            const itemTime = new Date(item.biddingEndTime).getTime();
+            return itemTime >= pastLimitDate.getTime() && itemTime <= now.getTime();
+          });
+        } else if (timeRange === "Last 30 Days") {
+          completedAuctions = completedAuctions.filter((item: any) => {
+            if (!item.biddingEndTime) return false;
+            const itemDate = new Date(item.biddingEndTime);
+            return itemDate.getFullYear() === currentYear && itemDate.getMonth() === currentMonth;
+          });
+        }
 
         const revenueByDate: Record<string, number> = {};
         const revenueByCategory: Record<string, number> = {};
 
         completedAuctions.forEach((item: any) => {
-          const amount = item.buyNowPrice || item.startingPrice || 0;
+          const amount = item.winningPrice || item.currentPrice || item.startingPrice || item.buyNowPrice || 0;
           
           if (item.biddingEndTime) {
             const dateStr = new Date(item.biddingEndTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'numeric' });
@@ -52,6 +73,13 @@ export const RevenueChart = () => {
           name: date,
           revenue: revenueByDate[date]
         }));
+        
+        formattedBarData.sort((a, b) => {
+          const [dayA, monthA] = a.name.split('/').map(Number);
+          const [dayB, monthB] = b.name.split('/').map(Number);
+          return monthA === monthB ? dayA - dayB : monthA - monthB;
+        });
+        
         setDataBar(formattedBarData);
 
         const colors = ['#FF4D4D', '#7ED321', '#4A90E2', '#F8E71C', '#8B5CF6', '#EC4899'];
@@ -70,23 +98,27 @@ export const RevenueChart = () => {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <h3 className="text-[#d32f2f] font-[900] text-lg">Revenue Chart</h3>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <h3 className="text-[#d32f2f] font-[900] text-lg">Revenue Chart</h3>
+        <div>
+          <select 
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="text-[13px] font-bold border border-gray-200 rounded-full px-5 py-2 bg-[#f8f9fa] outline-none cursor-pointer"
+          >
+            <option value="Last 7 Days">Last 7 Days</option>
+            <option value="Last 30 Days">Last 30 Days</option>
+          </select>
+        </div>
+      </div>
       
-      <div className="bg-white md:p-8 rounded-[24px]">
-        <select 
-          value={timeRange}
-          onChange={(e) => setTimeRange(e.target.value)}
-          className="text-[13px] font-bold border border-gray-200 rounded-full px-5 py-2 bg-[#f8f9fa] outline-none cursor-pointer mb-8"
-        >
-          <option>Last 7 Days</option>
-          <option>Last 30 Days</option>
-        </select>
-
+      <div className="bg-white p-4 md:p-8 rounded-[24px]">
         <div className="h-[350px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={dataBar} margin={{ top: 20, right: 30, left: 40, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              
               <XAxis 
                 dataKey="name" 
                 axisLine={true} 
@@ -94,6 +126,7 @@ export const RevenueChart = () => {
                 tick={{fontSize: 12, fontWeight: 500, fill: '#6b7280'}} 
                 dy={10} 
               />
+              
               <YAxis 
                 axisLine={true} 
                 tickLine={false} 
@@ -101,6 +134,7 @@ export const RevenueChart = () => {
                 tickFormatter={(value) => value.toLocaleString()} 
                 width={80} 
               />
+              
               <Tooltip content={<CustomTooltip />} cursor={{fill: '#f3f4f6'}} />
               <Bar dataKey="revenue" fill="#2DFFB2" radius={[4, 4, 0, 0]} barSize={24} />
             </BarChart>
@@ -108,10 +142,9 @@ export const RevenueChart = () => {
         </div>
       </div>
 
-      <h3 className="text-[#d32f2f] font-[900] text-lg">Category Performance</h3>
+      <h3 className="text-[#d32f2f] font-[900] text-lg mt-4">Category Performance</h3>
 
       <div className="bg-white p-6 md:p-8 rounded-[24px] flex flex-col items-center">
-        
         <div className="flex flex-row items-center justify-center w-full gap-2">
           
           <div style={{ width: '220px', height: '220px' }} className="flex-shrink-0 ml-[15%]">
