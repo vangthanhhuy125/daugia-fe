@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Jost } from "next/font/google";
+import { contactService } from "@/services/contactService";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
@@ -10,6 +11,9 @@ interface MessageModalProps {
   isOpen: boolean;
   onClose: () => void;
   isReadOnly?: boolean;
+  messageId: string;
+  onResolve?: () => void;
+  onReject?: () => void;
   data: {
     fullName: string;
     role: string;
@@ -21,17 +25,61 @@ interface MessageModalProps {
   };
 }
 
-export const MessageModal = ({ isOpen, onClose, isReadOnly, data }: MessageModalProps) => {
+export const MessageModal = ({
+  isOpen,
+  onClose,
+  isReadOnly,
+  messageId,
+  onResolve,
+  onReject,
+  data,
+}: MessageModalProps) => {
+  const [response, setResponse] = useState(data.response || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setResponse(data.response || "");
+      setErrorMessage("");
+    }
+  }, [data.response, isOpen]);
+
   if (!isOpen) return null;
+
+  const submitAction = async (action: "resolve" | "reject") => {
+    setErrorMessage("");
+
+    if (!response.trim()) {
+      setErrorMessage("Response is required.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        response,
+        approve: action === "resolve",
+      };
+      if (action === "resolve") {
+        await contactService.resolve(messageId, payload);
+        await Promise.resolve(onResolve?.());
+      } else {
+        await contactService.reject(messageId, payload);
+        await Promise.resolve(onReject?.());
+      }
+      onClose();
+    } catch (error: any) {
+      setErrorMessage(error?.message || `Failed to ${action} contact message.`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className={`${jost.className} fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4`}>
       <div className="bg-white w-full max-w-2xl rounded-[32px] p-8 shadow-2xl relative animate-in fade-in zoom-in duration-300 max-h-[95vh] flex flex-col border border-gray-200">
-        
-        <button 
-          onClick={onClose} 
-          className="absolute right-6 top-6 text-gray-400 hover:text-black transition-colors z-10"
-        >
+        <button onClick={onClose} className="absolute right-6 top-6 text-gray-400 hover:text-black transition-colors z-10">
           <X size={24} strokeWidth={2.5} />
         </button>
 
@@ -67,36 +115,46 @@ export const MessageModal = ({ isOpen, onClose, isReadOnly, data }: MessageModal
             {isReadOnly ? (
               <div className="flex items-start gap-4">
                 <span className="font-bold w-[140px] min-w-[140px] text-[#CE2029]">Response:</span>
-                <p className="text-gray-700 leading-relaxed">
-                  {data.response || "No response recorded."}
-                </p>
+                <p className="text-gray-700 leading-relaxed">{data.response || "No response recorded."}</p>
               </div>
             ) : (
               <>
                 <label className="block text-[#CE2029] font-bold mb-2 text-sm">Response:</label>
-                <textarea 
+                <textarea
+                  value={response}
+                  onChange={(event) => setResponse(event.target.value)}
                   className="w-full h-24 p-4 border border-gray-300 rounded-2xl outline-none focus:border-[#CE2029] focus:ring-1 focus:ring-[#CE2029] transition-all resize-none text-sm bg-gray-50"
                   placeholder="Type your response here..."
+                  disabled={isSubmitting}
                 />
               </>
             )}
           </div>
+
+          {errorMessage && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">
+              {errorMessage}
+            </div>
+          )}
         </div>
 
         {!isReadOnly && (
           <div className="grid grid-cols-2 gap-4 mt-8 flex-shrink-0">
-            <button 
+            <button
               type="button"
-              onClick={onClose}
-              className="w-full px-8 py-3.5 bg-[#CE2029] text-white font-bold rounded-full hover:bg-[#b01b22] transition-all active:scale-[0.98] text-sm shadow-md"
+              onClick={() => submitAction("reject")}
+              disabled={isSubmitting}
+              className="w-full px-8 py-3.5 bg-[#CE2029] text-white font-bold rounded-full hover:bg-[#b01b22] transition-all active:scale-[0.98] text-sm shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Cancel
+              {isSubmitting ? 'Submitting...' : 'Cancel'}
             </button>
-            <button 
+            <button
               type="button"
-              className="w-full px-8 py-3.5 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition-all active:scale-[0.98] text-sm shadow-md"
+              onClick={() => submitAction("resolve")}
+              disabled={isSubmitting}
+              className="w-full px-8 py-3.5 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition-all active:scale-[0.98] text-sm shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Resolve & Notify
+              {isSubmitting ? 'Submitting...' : 'Resolve & Notify'}
             </button>
           </div>
         )}

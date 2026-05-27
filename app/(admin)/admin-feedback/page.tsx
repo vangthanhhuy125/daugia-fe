@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Jost } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -9,40 +9,64 @@ import { Search, Calendar, Eye, Pencil, ArrowUpDown, RotateCcw } from "lucide-re
 import DatePicker from "react-datepicker";
 import { FeedbackModal } from "./FeedbackModal";
 import { MessageModal } from "./MessageModal";
+import { feedbackService } from "@/services/feedbackService";
+import { contactService } from "@/services/contactService";
+import type { FeedbackResponse, FeedbackStatus } from "@/types/feedback";
+import type { ContactMessageResponse, ContactStatus } from "@/types/contact";
 // @ts-ignore
 import "react-datepicker/dist/react-datepicker.css";
 
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "700", "900"] });
 
-type StatusType = "Pending" | "Resolved" | "Reject" | "Unread" | "Replied";
+type StatusType = "Pending" | "Resolved" | "Reject";
+type ModalType = "feedback" | "message" | null;
 
-interface MessageData {
-  id: number;
+interface TableItem {
+  id: string;
   sender: string;
   date: string;
+  createdAt: string;
   status: StatusType;
-  fullName?: string;
-  role?: string;
-  email?: string;
-  phone?: string;
+  fullName: string;
+  role: string;
+  email: string;
+  phone: string;
   address?: string;
-  content?: string;
+  content: string;
+  response?: string;
 }
 
-const mockFeedbacks: MessageData[] = [
-  { id: 1, sender: "Tran Trung", date: "10/03/2026", status: "Pending", fullName: "Tran Trung", role: "Bidder", email: "trantrung990011@gmail.com", phone: "0987654321", content: "The auction process was smooth and easy to follow. However, I experienced a delay during payment, and the page took a long time to load. I hope this issue can be improved." },
-  { id: 2, sender: "Alex Nguyen", date: "08/03/2026", status: "Resolved", fullName: "Alex Nguyen", role: "Bidder", email: "alex.nguyen@gmail.com", phone: "0912345678", content: "Great experience overall." },
-  { id: 3, sender: "Donal Trump", date: "01/03/2026", status: "Reject", fullName: "Donal Trump", role: "Bidder", email: "donal.trump@whitehouse.gov", phone: "0900000000", content: "I demand a refund." },
-];
+const statusToDisplay = (status?: string): StatusType => {
+  if (status === "RESOLVED") return "Resolved";
+  if (status === "REJECTED") return "Reject";
+  return "Pending";
+};
 
-const mockContactMessages: MessageData[] = [
-  { id: 1, sender: "Tran Trung", date: "10/03/2026", status: "Unread", fullName: "Tran Trung", role: "Guest", email: "trantrung990011@gmail.com", phone: "0987654321", address: "No. 991, Group 24, Long Phuoc Hamlet, Long Khanh Commune, Dong Thap Province", content: "Hello, I'm a guest user and I'm having trouble accessing an auction page. The page keeps loading and does not display any content. Could you please check this issue?" },
-  { id: 2, sender: "Alex Nguyen", date: "08/03/2026", status: "Replied", fullName: "Alex Nguyen", role: "Guest", email: "alex.n@gmail.com", phone: "0933333333", address: "Ho Chi Minh City", content: "How can I register an account?" },
-  { id: 3, sender: "Donal Trump", date: "01/03/2026", status: "Replied", fullName: "Donal Trump", role: "Guest", email: "dt@mail.com", phone: "0944444444", address: "New York", content: "Is this site secure?" },
-];
+const formatDate = (value: string) => new Date(value).toLocaleDateString("en-GB");
 
-const TableSection = ({ 
-  title, data, search, setSearch, start, setStart, end, setEnd, statuses, setStatuses, sortDesc, setSortDesc, options, onAction 
+const buildStatusFilter = (statuses: StatusType[]): FeedbackStatus | ContactStatus | undefined => {
+  if (statuses.length !== 1) return undefined;
+  if (statuses[0] === "Pending") return "PENDING";
+  if (statuses[0] === "Resolved") return "RESOLVED";
+  return "REJECTED";
+};
+
+const TableSection = ({
+  title,
+  data,
+  isLoading,
+  search,
+  setSearch,
+  start,
+  setStart,
+  end,
+  setEnd,
+  statuses,
+  setStatuses,
+  sortDesc,
+  setSortDesc,
+  options,
+  onAction,
 }: any) => {
   const getStatusColor = (status: string) => {
     const normalized = status?.toString().toLowerCase();
@@ -52,9 +76,7 @@ const TableSection = ({
   };
 
   const handleStatusChange = (status: string) => {
-    setStatuses((prev: string[]) =>
-      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
-    );
+    setStatuses((prev: string[]) => (prev.includes(status) ? prev.filter((item) => item !== status) : [...prev, status]));
   };
 
   const handleReset = () => {
@@ -67,13 +89,13 @@ const TableSection = ({
   return (
     <div className={`${jost.className} space-y-6 select-none`}>
       <h2 className="text-[#CE2029] font-bold text-2xl">{title}</h2>
-      
+
       <div className="flex flex-wrap items-end gap-4 mb-8">
         <div className="flex-grow min-w-[280px]">
           <div className="relative group">
-            <input 
-              type="text" 
-              placeholder="Search by name sender" 
+            <input
+              type="text"
+              placeholder="Search by name sender"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full h-12 bg-white border border-gray-200 rounded-xl px-12 outline-none font-medium text-gray-700 focus:border-[#CE2029] transition-all"
@@ -85,13 +107,13 @@ const TableSection = ({
         <div className="w-full md:w-48 space-y-1.5 custom-datepicker">
           <label className="text-xs font-bold text-gray-400 ml-2">From Date:</label>
           <div className="relative">
-            <DatePicker 
-              selected={start} 
-              onChange={(d: Date | null) => setStart(d)} 
-              maxDate={end || undefined} 
-              placeholderText="dd/mm/yyyy" 
+            <DatePicker
+              selected={start}
+              onChange={(d: Date | null) => setStart(d)}
+              maxDate={end || undefined}
+              placeholderText="dd/mm/yyyy"
               dateFormat="dd/MM/yyyy"
-              className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#CE2029] transition-all" 
+              className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#CE2029] transition-all"
             />
             <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" size={18} />
           </div>
@@ -100,20 +122,20 @@ const TableSection = ({
         <div className="w-full md:w-48 space-y-1.5 custom-datepicker">
           <label className="text-xs font-bold text-gray-400 ml-2">To Date:</label>
           <div className="relative">
-            <DatePicker 
-              selected={end} 
-              onChange={(d: Date | null) => setEnd(d)} 
-              minDate={start || undefined} 
-              placeholderText="dd/mm/yyyy" 
+            <DatePicker
+              selected={end}
+              onChange={(d: Date | null) => setEnd(d)}
+              minDate={start || undefined}
+              placeholderText="dd/mm/yyyy"
               dateFormat="dd/MM/yyyy"
-              className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#CE2029] transition-all" 
+              className="w-full h-12 bg-white border border-gray-200 rounded-xl px-5 outline-none font-medium text-gray-600 focus:border-[#CE2029] transition-all"
             />
             <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" size={18} />
           </div>
         </div>
 
-        <button 
-          onClick={handleReset} 
+        <button
+          onClick={handleReset}
           className="h-12 w-12 flex items-center justify-center rounded-xl bg-gray-50 border border-gray-200 text-gray-400 hover:text-[#CE2029] hover:border-[#CE2029] transition-all duration-500 group"
           title="Reset filters"
         >
@@ -123,15 +145,15 @@ const TableSection = ({
 
       <div className="flex items-center gap-8 py-4 px-6 bg-gray-50/50 border border-dashed border-gray-200 rounded-2xl w-full md:w-max">
         <span className="text-[#CE2029] font-bold text-sm">Status</span>
-        <div className="flex gap-6">
+        <div className="flex gap-6 flex-wrap">
           {options.map((opt: string) => (
             <label key={opt} className="flex items-center gap-3 cursor-pointer group">
               <div className="relative flex items-center justify-center">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={statuses.includes(opt)}
                   onChange={() => handleStatusChange(opt)}
-                  className="peer appearance-none w-5 h-5 border-2 border-gray-300 rounded-md checked:bg-[#CE2029] checked:border-[#CE2029] transition-all cursor-pointer" 
+                  className="peer appearance-none w-5 h-5 border-2 border-gray-300 rounded-md checked:bg-[#CE2029] checked:border-[#CE2029] transition-all cursor-pointer"
                 />
                 <svg className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"></polyline>
@@ -157,23 +179,31 @@ const TableSection = ({
             </tr>
           </thead>
           <tbody>
-            {data.length > 0 ? data.map((item: any, index: number) => (
-              <tr key={item.id} className={`${index % 2 === 0 ? "bg-[#EBF2F7]" : "bg-white"} group hover:!bg-[#d1e3f0] transition-colors relative`}>
-                <td className="py-4">{index + 1}</td>
-                <td className="py-4 pl-8">{item.sender}</td>
-                <td className="py-4">{item.date}</td>
-                <td className={`py-4 ${getStatusColor(item.status)}`}>{item.status}</td>
-                <td className="py-4">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-center gap-2">
-                    {item.status === "Pending" || item.status === "Unread" ? (
-                      <Pencil size={18} className="text-gray-600 cursor-pointer hover:text-[#CE2029]" onClick={() => onAction(item, 'edit')} />
-                    ) : (
-                      <Eye size={18} className="text-gray-600 cursor-pointer hover:text-blue-600" onClick={() => onAction(item, 'view')} />
-                    )}
-                  </div>
+            {isLoading ? (
+              <tr>
+                <td colSpan={5} className="py-12 text-gray-400 font-bold bg-white">
+                  Loading...
                 </td>
               </tr>
-            )) : (
+            ) : data.length > 0 ? (
+              data.map((item: TableItem, index: number) => (
+                <tr key={item.id} className={`${index % 2 === 0 ? "bg-[#EBF2F7]" : "bg-white"} group hover:!bg-[#d1e3f0] transition-colors relative`}>
+                  <td className="py-4">{index + 1}</td>
+                  <td className="py-4 pl-8">{item.sender}</td>
+                  <td className="py-4">{item.date}</td>
+                  <td className={`py-4 ${getStatusColor(item.status)}`}>{item.status}</td>
+                  <td className="py-4">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-center gap-2">
+                      {item.status === "Pending" ? (
+                        <Pencil size={18} className="text-gray-600 cursor-pointer hover:text-[#CE2029]" onClick={() => onAction(item, "edit")} />
+                      ) : (
+                        <Eye size={18} className="text-gray-600 cursor-pointer hover:text-blue-600" onClick={() => onAction(item, "view")} />
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
               <tr>
                 <td colSpan={5} className="py-12 text-gray-400 font-bold bg-white">No results found</td>
               </tr>
@@ -189,30 +219,94 @@ export default function AdminFeedbackPage() {
   const [fbSearch, setFbSearch] = useState("");
   const [fbStart, setFbStart] = useState<Date | null>(null);
   const [fbEnd, setFbEnd] = useState<Date | null>(null);
-  const [fbStatus, setFbStatus] = useState<string[]>([]);
+  const [fbStatus, setFbStatus] = useState<StatusType[]>([]);
   const [fbSortDesc, setFbSortDesc] = useState(true);
 
   const [ctSearch, setCtSearch] = useState("");
   const [ctStart, setCtStart] = useState<Date | null>(null);
   const [ctEnd, setCtEnd] = useState<Date | null>(null);
-  const [ctStatus, setCtStatus] = useState<string[]>([]);
+  const [ctStatus, setCtStatus] = useState<StatusType[]>([]);
   const [ctSortDesc, setCtSortDesc] = useState(true);
 
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [modalType, setModalType] = useState<'feedback' | 'message' | null>(null);
+  const [feedbackItems, setFeedbackItems] = useState<TableItem[]>([]);
+  const [contactItems, setContactItems] = useState<TableItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const [selectedItem, setSelectedItem] = useState<TableItem | null>(null);
+  const [modalType, setModalType] = useState<ModalType>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
 
-  const parseDate = (dStr: string) => {
-    const [day, month, year] = dStr.split("/").map(Number);
-    return new Date(year, month - 1, day);
-  };
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage("");
 
-  const getFilteredData = (data: MessageData[], search: string, start: Date | null, end: Date | null, statuses: string[], isDesc: boolean) => {
-    let filtered = data.filter(item => {
-      const matchSearch = search.length === 0 || item.sender.toLowerCase().includes(search.toLowerCase());
+    try {
+      const [feedbackStatusFilter, contactStatusFilter] = [buildStatusFilter(fbStatus), buildStatusFilter(ctStatus)];
+      const [feedbackResponse, contactResponse] = await Promise.all([
+        feedbackService.getAll(feedbackStatusFilter, 0, 100),
+        contactService.getAll(contactStatusFilter, 0, 100),
+      ]);
+
+      setFeedbackItems(
+        (feedbackResponse.data?.content || []).map((item: FeedbackResponse) => ({
+          id: item.id,
+          sender: item.fullName,
+          date: formatDate(item.createdAt),
+          createdAt: item.createdAt,
+          status: statusToDisplay(item.status),
+          fullName: item.fullName,
+          role: item.role,
+          email: item.email,
+          phone: item.phone,
+          content: item.content,
+          response: item.response,
+        }))
+      );
+
+      setContactItems(
+        (contactResponse.data?.content || []).map((item: ContactMessageResponse) => ({
+          id: item.id,
+          sender: item.fullName,
+          date: formatDate(item.createdAt),
+          createdAt: item.createdAt,
+          status: statusToDisplay(item.status),
+          fullName: item.fullName,
+          role: "Guest",
+          email: item.email,
+          phone: item.phone,
+          address: item.address,
+          content: item.message,
+          response: item.response,
+        }))
+      );
+    } catch (error: any) {
+      setErrorMessage(error?.message || "Failed to load feedback and contact messages.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fbStatus, ctStatus]);
+
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
+
+  const filterItems = (
+    data: TableItem[],
+    search: string,
+    start: Date | null,
+    end: Date | null,
+    statuses: StatusType[],
+    isDesc: boolean
+  ) => {
+    const filtered = data.filter((item) => {
+      const matchSearch =
+        search.length === 0 ||
+        item.sender.toLowerCase().includes(search.toLowerCase()) ||
+        item.email.toLowerCase().includes(search.toLowerCase());
       const matchStatus = statuses.length === 0 || statuses.includes(item.status);
       let matchDate = true;
-      const itemDate = parseDate(item.date);
+      const itemDate = new Date(item.createdAt);
       if (start && end) matchDate = itemDate >= start && itemDate <= end;
       else if (start) matchDate = itemDate >= start;
       else if (end) matchDate = itemDate <= end;
@@ -220,19 +314,36 @@ export default function AdminFeedbackPage() {
     });
 
     return filtered.sort((a, b) => {
-      const timeA = parseDate(a.date).getTime();
-      const timeB = parseDate(b.date).getTime();
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
       return isDesc ? timeB - timeA : timeA - timeB;
     });
   };
 
-  const filteredFeedbacks = useMemo(() => getFilteredData(mockFeedbacks, fbSearch, fbStart, fbEnd, fbStatus, fbSortDesc), [fbSearch, fbStart, fbEnd, fbStatus, fbSortDesc]);
-  const filteredContacts = useMemo(() => getFilteredData(mockContactMessages, ctSearch, ctStart, ctEnd, ctStatus, ctSortDesc), [ctSearch, ctStart, ctEnd, ctStatus, ctSortDesc]);
+  const filteredFeedbacks = useMemo(
+    () => filterItems(feedbackItems, fbSearch, fbStart, fbEnd, fbStatus, fbSortDesc),
+    [feedbackItems, fbSearch, fbStart, fbEnd, fbStatus, fbSortDesc]
+  );
 
-  const handleAction = (item: any, type: 'feedback' | 'message', mode: 'view' | 'edit') => {
+  const filteredContacts = useMemo(
+    () => filterItems(contactItems, ctSearch, ctStart, ctEnd, ctStatus, ctSortDesc),
+    [contactItems, ctSearch, ctStart, ctEnd, ctStatus, ctSortDesc]
+  );
+
+  const handleAction = (item: TableItem, type: "feedback" | "message", mode: "view" | "edit") => {
     setSelectedItem(item);
     setModalType(type);
-    setIsReadOnly(mode === 'view');
+    setIsReadOnly(mode === "view");
+  };
+
+  const handleResolveSuccess = () => {
+    setModalType(null);
+    void fetchData();
+  };
+
+  const handleRejectSuccess = () => {
+    setModalType(null);
+    void fetchData();
   };
 
   return (
@@ -240,69 +351,113 @@ export default function AdminFeedbackPage() {
       <Header />
       <main className="max-w-screen-xl mx-auto w-full py-10 flex-1 px-6">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-          <aside className="md:col-span-3"><Sidebar /></aside>
-          <div className="md:col-span-9 space-y-24">
-            <TableSection 
-              title="Feedback" data={filteredFeedbacks}
-              search={fbSearch} setSearch={setFbSearch}
-              start={fbStart} setStart={setFbStart}
-              end={fbEnd} setEnd={setFbEnd}
-              statuses={fbStatus} setStatuses={setFbStatus}
-              sortDesc={fbSortDesc} setSortDesc={setFbSortDesc}
+          <aside className="md:col-span-3">
+            <Sidebar />
+          </aside>
+          <div className="md:col-span-9 space-y-8">
+            {errorMessage && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">
+                {errorMessage}
+              </div>
+            )}
+
+            <TableSection
+              title="Feedback"
+              data={filteredFeedbacks}
+              isLoading={isLoading}
+              search={fbSearch}
+              setSearch={setFbSearch}
+              start={fbStart}
+              setStart={setFbStart}
+              end={fbEnd}
+              setEnd={setFbEnd}
+              statuses={fbStatus}
+              setStatuses={setFbStatus}
+              sortDesc={fbSortDesc}
+              setSortDesc={setFbSortDesc}
               options={["Pending", "Resolved", "Reject"]}
-              onAction={(item: any, mode: any) => handleAction(item, 'feedback', mode)}
+              onAction={(item: TableItem, mode: "view" | "edit") => handleAction(item, "feedback", mode)}
             />
-            <TableSection 
-              title="Contact Messages" data={filteredContacts}
-              search={ctSearch} setSearch={setCtSearch}
-              start={ctStart} setStart={setCtStart}
-              end={ctEnd} setEnd={setCtEnd}
-              statuses={ctStatus} setStatuses={setCtStatus}
-              sortDesc={ctSortDesc} setSortDesc={setCtSortDesc}
-              options={["Unread", "Replied"]}
-              onAction={(item: any, mode: any) => handleAction(item, 'message', mode)}
+
+            <TableSection
+              title="Contact Messages"
+              data={filteredContacts}
+              isLoading={isLoading}
+              search={ctSearch}
+              setSearch={setCtSearch}
+              start={ctStart}
+              setStart={setCtStart}
+              end={ctEnd}
+              setEnd={setCtEnd}
+              statuses={ctStatus}
+              setStatuses={setCtStatus}
+              sortDesc={ctSortDesc}
+              setSortDesc={setCtSortDesc}
+              options={["Pending", "Resolved", "Reject"]}
+              onAction={(item: TableItem, mode: "view" | "edit") => handleAction(item, "message", mode)}
             />
           </div>
         </div>
       </main>
       <Footer />
 
-      {modalType === 'feedback' && selectedItem && (
-        <FeedbackModal 
-          isOpen={true} 
-          onClose={() => setModalType(null)} 
+      {modalType === "feedback" && selectedItem && (
+        <FeedbackModal
+          isOpen={true}
+          onClose={() => setModalType(null)}
+          feedbackId={selectedItem.id}
+          onResolve={handleResolveSuccess}
+          onReject={handleRejectSuccess}
           data={{
-            fullName: selectedItem.fullName || "",
-            role: selectedItem.role || "",
-            email: selectedItem.email || "",
-            phone: selectedItem.phone || "",
-            feedback: selectedItem.content || ""
+            fullName: selectedItem.fullName,
+            role: selectedItem.role,
+            email: selectedItem.email,
+            phone: selectedItem.phone,
+            feedback: selectedItem.content,
+            response: selectedItem.response,
           }}
           isReadOnly={isReadOnly}
         />
       )}
 
-      {modalType === 'message' && selectedItem && (
-        <MessageModal 
-          isOpen={true} 
-          onClose={() => setModalType(null)} 
+      {modalType === "message" && selectedItem && (
+        <MessageModal
+          isOpen={true}
+          onClose={() => setModalType(null)}
+          messageId={selectedItem.id}
+          onResolve={handleResolveSuccess}
+          onReject={handleRejectSuccess}
           data={{
-            fullName: selectedItem.fullName || "",
-            role: selectedItem.role || "",
-            email: selectedItem.email || "",
-            phone: selectedItem.phone || "",
+            fullName: selectedItem.fullName,
+            role: selectedItem.role,
+            email: selectedItem.email,
+            phone: selectedItem.phone,
             address: selectedItem.address || "",
-            message: selectedItem.content || ""
+            message: selectedItem.content,
+            response: selectedItem.response,
           }}
           isReadOnly={isReadOnly}
         />
       )}
 
       <style jsx global>{`
-        .custom-datepicker .react-datepicker-wrapper { width: 100%; }
-        .react-datepicker { font-family: inherit; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        .react-datepicker__header { background-color: white; border-bottom: 1px solid #eee; }
-        .react-datepicker__day--selected { background-color: #CE2029 !important; border-radius: 8px; }
+        .custom-datepicker .react-datepicker-wrapper {
+          width: 100%;
+        }
+        .react-datepicker {
+          font-family: inherit;
+          border-radius: 12px;
+          border: 1px solid #eee;
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+        .react-datepicker__header {
+          background-color: white;
+          border-bottom: 1px solid #eee;
+        }
+        .react-datepicker__day--selected {
+          background-color: #CE2029 !important;
+          border-radius: 8px;
+        }
       `}</style>
     </div>
   );
